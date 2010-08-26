@@ -22,6 +22,36 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
     """
     Serves as the file-level storage object for thumbnails.
     """
+    def generate_url(self, thumb_width, thumb_height):
+        # Try to see if we can hit the cache instead of asking the storage
+        # backend for the URL. This is particularly important for S3 backends.
+        cache_key = "Thumbcache_%s_%dx%d" % (self.url, thumb_width, thumb_height)
+
+        cached_val = cache.get(cache_key)
+        if cached_val:
+            return cached_val
+        
+        # Split URL from GET attribs.
+        url_get_split = self.url.rsplit('?', 1)
+        # Just the URL string (no GET attribs).
+        url_str = url_get_split[0]
+        
+        # Get the URL string without the original's filename at the end.
+        url_minus_filename = url_str.rsplit('/', 1)[0]
+        
+        # Determine what the filename would be for a thumb with these
+        # dimensions, regardless of whether it actually exists.
+        new_filename = self._calc_thumb_size_filename((thumb_width, thumb_height))
+        
+        # Slap the new thumbnail filename on the end of the old URL, in place
+        # of the orignal image's filename.
+        new_url = "%s/%s?cbust=%s" % (url_minus_filename, 
+                                      os.path.basename(new_filename),
+                                      settings.MEDIA_CACHE_BUSTER)
+        # Cache this so we don't have to hit the storage backend for a while.
+        cache.set(cache_key, new_url, settings.THUMBNAIL_URL_CACHE_TIME)
+        return new_url
+        
     def __getattr__(self, name):
         """
         This is used to retrieve thumbnail URLs. See ImageWithThumbsField for 
@@ -51,39 +81,12 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
         thumb_width = int(matches.group('thumb_width')) 
         thumb_height = int(matches.group('thumb_height'))
                 
-        # Try to see if we can hit the cache instead of asking the storage
-        # backend for the URL. This is particularly important for S3 backends.
         try:
-            cache_key = "Thumbcache_%s_%dx%d" % (self.url, thumb_width, thumb_height)
+            return self.generate_url(thumb_width, thumb_height)
         except ValueError:
-            # If there's no file associated with this field, just die.
-            # Trying to access self.url raises this.
-            raise AttributeError()
-
-        cached_val = cache.get(cache_key)
-        if cached_val:
-            return cached_val
-        
-        # Split URL from GET attribs.
-        url_get_split = self.url.rsplit('?', 1)
-        # Just the URL string (no GET attribs).
-        url_str = url_get_split[0]
-        
-        # Get the URL string without the original's filename at the end.
-        url_minus_filename = url_str.rsplit('/', 1)[0]
-        
-        # Determine what the filename would be for a thumb with these
-        # dimensions, regardless of whether it actually exists.
-        new_filename = self._calc_thumb_size_filename((thumb_width, thumb_height))
-        
-        # Slap the new thumbnail filename on the end of the old URL, in place
-        # of the orignal image's filename.
-        new_url = "%s/%s?cbust=%s" % (url_minus_filename, 
-                                      os.path.basename(new_filename),
-                                      settings.MEDIA_CACHE_BUSTER)
-        # Cache this so we don't have to hit the storage backend for a while.
-        cache.set(cache_key, new_url, settings.THUMBNAIL_URL_CACHE_TIME)
-        return new_url
+            # This file object doesn't actually have a file. Probably
+            # model field with a None value.
+            return ''
         
     def get_thumbnail_format(self):
         """
