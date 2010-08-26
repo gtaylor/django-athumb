@@ -1,13 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-Thumbnailing model fields. Plays nicely with Django storage backends, most
-notably S3. Pre-generates thumbnails based on the sizes specified on the 
-models. 
-
-90% original, but the thumbnailing PIL generate_thumb() method provided by: 
-
-django-thumbs by Antonio Melé
-http://django.es
+Fields, FieldFiles, and Validators.
 """
 import os
 import cStringIO
@@ -16,80 +9,13 @@ import re
 from PIL import Image
 from django.db.models import ImageField
 from django.db.models.fields.files import ImageFieldFile
-from django.core.files.base import ContentFile
-from django.core.validators import ValidationError
 from django.conf import settings
 from django.core.cache import cache
 
-class ImageUploadExtensionValidator(object):
-    """
-    Perform some basic image uploading extension validation.
-    """
-    compare = lambda self, a, b: a is not b
-    clean   = lambda self, x: x
+from manipulations import generate_thumb_basic
 
-    def __call__(self, value):
-        filename = value.name
-        filename_split = filename.split('.')
-        extension = filename_split[-1]
-        
-        # Decided to require file extensions.
-        if len(filename_split) < 2:
-            raise ValidationError('Your file lacks an extension such as .jpg or .png. Please re-name it on your computer and re-upload it.',
-                                  code='no_extension')
-
-        # Restrict allowable extensions.
-        if extension.lower() not in settings.ALLOWABLE_THUMBNAIL_EXTENSIONS:
-            # Format for your viewing pleasure.
-            allowable_str = ' '.join(settings.ALLOWABLE_THUMBNAIL_EXTENSIONS)
-            raise ValidationError('Your file is not one of the allowable types: %s' % allowable_str,
-                                  code='extension_not_allowed')
 # Models want this instantiated ahead of time.
-image_extension_validator = ImageUploadExtensionValidator()
-
-def generate_thumb(orig_image, thumb_size, format):
-    """
-    Generates a thumbnail image and returns a ContentFile object with the thumbnail
-    
-    Parameters:
-    ===========
-    orig         A PIL Image object to thumbnail.
-    
-    thumb_size  desired thumbnail size, ie: (200,120)
-    
-    format      format of the original image ('jpeg','gif','png',...)
-                (this format will be used for the generated thumbnail, too)
-    """
-    image = orig_image.copy()
-    # get size
-    thumb_w, thumb_h = thumb_size
-    # If you want to generate a square thumbnail
-    if thumb_w == thumb_h:
-        # quad
-        xsize, ysize = image.size
-        # get minimum size
-        minsize = min(xsize,ysize)
-        # largest square possible in the image
-        xnewsize = (xsize-minsize)/2
-        ynewsize = (ysize-minsize)/2
-        # crop it
-        image2 = image.crop((xnewsize, ynewsize, xsize-xnewsize, ysize-ynewsize))
-        # load is necessary after crop                
-        image2.load()
-        # thumbnail of the cropped image (with ANTIALIAS to make it look better)
-        image2.thumbnail(thumb_size, Image.ANTIALIAS)
-    else:
-        # not quad
-        image2 = image
-        image2.thumbnail(thumb_size, Image.ANTIALIAS)
-    
-    io = cStringIO.StringIO()
-    # PNG and GIF are the same, JPG is JPEG
-    if format.upper() == 'JPG':
-        format = 'JPEG'
-    
-    image2.save(io, format)
-    return ContentFile(io.getvalue())    
+IMAGE_EXTENSION_VALIDATOR = ImageUploadExtensionValidator()
 
 class ImageWithThumbsFieldFile(ImageFieldFile):
     """
