@@ -13,6 +13,7 @@ from django.conf import settings
 from django.core.cache import cache
 
 from manipulations import generate_thumb_basic
+from validators import ImageUploadExtensionValidator
 
 # Models want this instantiated ahead of time.
 IMAGE_EXTENSION_VALIDATOR = ImageUploadExtensionValidator()
@@ -151,7 +152,7 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
         file_extension = self.get_thumbnail_format()
                 
         # The work starts here.
-        thumb_content = generate_thumb(image, size, file_extension)
+        thumb_content = generate_thumb_basic(image, size, file_extension)
         # Save the result to the storage backend.
         thumb_name_ = self.storage.save(thumb_name, thumb_content)        
         
@@ -225,7 +226,7 @@ class ImageWithThumbsField(ImageField):
         self.height_field = height_field
         self.sizes = sizes
         self.thumbnail_format = thumbnail_format
-        super(ImageField, self).__init__(validators=[image_extension_validator], **kwargs)
+        super(ImageField, self).__init__(validators=[IMAGE_EXTENSION_VALIDATOR], **kwargs)
         
     def south_field_triple(self):
         """
