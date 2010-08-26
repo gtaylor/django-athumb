@@ -22,10 +22,17 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
     """
     Serves as the file-level storage object for thumbnails.
     """
-    def generate_url(self, thumb_width, thumb_height):
+    def generate_url(self, thumb_width, thumb_height, ssl_mode=False):
+        # This is tacked on to the end of the cache key to make sure SSL
+        # URLs are stored separate from plain http.
+        ssl_postfix = '_ssl' if ssl_mode else ''
+        
         # Try to see if we can hit the cache instead of asking the storage
         # backend for the URL. This is particularly important for S3 backends.
-        cache_key = "Thumbcache_%s_%dx%d" % (self.url, thumb_width, thumb_height)
+        cache_key = "Thumbcache_%s_%dx%d%s" % (self.url, 
+                                               thumb_width, 
+                                               thumb_height,
+                                               ssl_postfix)
 
         cached_val = cache.get(cache_key)
         if cached_val:
@@ -48,6 +55,10 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
         new_url = "%s/%s?cbust=%s" % (url_minus_filename, 
                                       os.path.basename(new_filename),
                                       settings.MEDIA_CACHE_BUSTER)
+        
+        if ssl_mode:
+            new_url = new_url.replace('http://', 'https://')
+        
         # Cache this so we don't have to hit the storage backend for a while.
         cache.set(cache_key, new_url, settings.THUMBNAIL_URL_CACHE_TIME)
         return new_url

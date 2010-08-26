@@ -8,6 +8,8 @@ register = Library()
 
 size_pat = re.compile(r'(\d+)x(\d+)$')
 
+re_new_args = re.compile('(?<!quality)=')
+
 TAG_SETTINGS = ['force_ssl']
 
 def split_args(args):
@@ -80,8 +82,17 @@ class ThumbnailNode(Node):
             # This is typically a athumb.fields.ImageWithThumbsFieldFile object.
             thumb_width, thumb_height = requested_size
             try:
+                # Allow the user to override the protocol in the tag.
+                force_ssl = self.kwargs.get('force_ssl', False)
+                # Try to detect SSL mode in the request context. Front-facing
+                # server or proxy must be passing the correct headers for
+                # this to work. Also, factor in force_ssl.
+                ssl_mode = self.is_secure(context) or force_ssl
+                # Get the URL for the thumbnail from the
+                # ImageWithThumbsFieldFile object.  
                 thumbnail = relative_source.generate_url(thumb_width,
-                                                         thumb_height)
+                                                         thumb_height,
+                                                         ssl_mode=ssl_mode)
             except ValueError:
                 # This file object doesn't actually have a file. Probably
                 # model field with a None value.
@@ -96,6 +107,18 @@ class ThumbnailNode(Node):
         context[self.context_name] = thumbnail
 
         return ''
+    
+    def is_secure(self, context):
+        """
+        Looks at the RequestContext object and determines if this page is
+        secured with SSL. Linking unencrypted media on an encrypted page will
+        show a warning icon on some browsers. We need to be able to serve from
+        an encrypted source for encrypted pages, if our backend supports it.
+
+        'django.core.context_processors.request' must be added to
+        TEMPLATE_CONTEXT_PROCESSORS in settings.py.
+        """
+        return 'request' in context and context['request'].is_secure()
 
 
 def thumbnail(parser, token):
