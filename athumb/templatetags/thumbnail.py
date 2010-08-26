@@ -6,10 +6,12 @@ from django.utils.encoding import force_unicode
 
 register = Library()
 
-size_pat = re.compile(r'(\d+)x(\d+)$')
+# Various regular expressions compiled here to avoid having to compile them
+# repeatedly.
+REGEXP_THUMB_SIZES = re.compile(r'(\d+)x(\d+)$')
+REGEXP_ARGS = re.compile('(?<!quality)=')
 
-re_new_args = re.compile('(?<!quality)=')
-
+# List of valid keys for key=value tag arguments.
 TAG_SETTINGS = ['force_ssl']
 
 def split_args(args):
@@ -17,20 +19,22 @@ def split_args(args):
     Split a list of argument strings into a dictionary where each key is an
     argument name.
 
-    An argument looks like ``crop``, ``crop="some option"`` or ``crop=my_var``.
-    Arguments which provide no value get a value of ``None``.
+    An argument looks like ``force_ssl=True``.
     """
     if not args:
         return {}
+
     # Handle the old comma separated argument format.
-    if len(args) == 1 and not re_new_args.search(args[0]):
+    if len(args) == 1 and not REGEXP_ARGS.search(args[0]):
         args = args[0].split(',')
+
     # Separate out the key and value for each argument.
     args_dict = {}
     for arg in args:
         split_arg = arg.split('=', 1)
         value = len(split_arg) > 1 and split_arg[1] or None
         args_dict[split_arg[0]] = value
+
     return args_dict
 
 class ThumbnailNode(Node):
@@ -43,32 +47,34 @@ class ThumbnailNode(Node):
         self.kwargs = kwargs
 
     def render(self, context):
-        DEBUG = settings.DEBUG
         try:
-            # A file object will be allowed in DjangoThumbnail class
+            # This evaluates to a ImageWithThumbsField, as long as the
+            # user specified a valid model field.
             relative_source = Variable(self.source_var).resolve(context)
         except VariableDoesNotExist:
-            if DEBUG:
+            if settings.DEBUG:
                 raise VariableDoesNotExist("Variable '%s' does not exist." %
                         self.source_var)
             else:
                 relative_source = None
+
         try:
             requested_size = Variable(self.size_var).resolve(context)
         except VariableDoesNotExist:
-            if DEBUG:
+            if settings.DEBUG:
                 raise TemplateSyntaxError("Size argument '%s' is not a"
                         " valid size nor a valid variable." % self.size_var)
             else:
                 requested_size = None
+
         # Size variable can be either a tuple/list of two integers or a valid
         # string, only the string is checked.
         else:
             if isinstance(requested_size, basestring):
-                m = size_pat.match(requested_size)
+                m = REGEXP_THUMB_SIZES.match(requested_size)
                 if m:
                     requested_size = (int(m.group(1)), int(m.group(2)))
-                elif DEBUG:
+                elif settings.DEBUG:
                     raise TemplateSyntaxError("Variable '%s' was resolved but "
                             "'%s' is not a valid size." %
                             (self.size_var, requested_size))
@@ -159,7 +165,7 @@ def thumbnail(parser, token):
     source_var = args[1]
     # If the size argument was a correct static format, wrap it in quotes so
     # that it is compiled correctly.
-    m = size_pat.match(args[2])
+    m = REGEXP_THUMB_SIZES.match(args[2])
     if m:
         args[2] = '"%s"' % args[2]
     size_var = args[2]
