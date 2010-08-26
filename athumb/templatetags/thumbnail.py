@@ -8,6 +8,8 @@ register = Library()
 
 size_pat = re.compile(r'(\d+)x(\d+)$')
 
+TAG_SETTINGS = ['force_ssl']
+
 def split_args(args):
     """
     Split a list of argument strings into a dictionary where each key is an
@@ -83,7 +85,7 @@ class ThumbnailNode(Node):
             except ValueError:
                 # This file object doesn't actually have a file. Probably
                 # model field with a None value.
-                thumbnail = None
+                thumbnail = ''
 
         # Return the thumbnail class, or put it on the context
         if self.context_name is None:
@@ -106,13 +108,13 @@ def thumbnail(parser, token):
 
     After the image path and dimensions, you can put any options::
 
-        {% thumbnail image 80x80 quality=95 crop %}
+        {% thumbnail image 80x80 force_ssl=True %}
 
-    To put the DjangoThumbnail class on the context instead of just rendering
-    the absolute url, finish the tag with ``as [context_var_name]``::
+    To put the thumbnail URL on the context instead of just rendering
+    it, finish the tag with ``as [context_var_name]``::
 
         {% thumbnail image 80x80 as thumb %}
-        {{ thumb.width }} x {{ thumb.height }}
+        <img src="{{thumb}}" />
     """
     args = token.split_contents()
     tag = args[0]
