@@ -1,3 +1,14 @@
+"""
+Much of this module was taken/inspired from sorl-thumbnails, by mikko and
+smileychris. In simple cases, we retain compatibility with sorl-thumbnails, but
+we don't generate thumbs on the fly (they are generated at the time of upload,
+and only the specified sizes).
+
+Sources from sorl-thumbnails in this module are Copyright (c) 2007, 
+Mikko Hellsing, Chris Beaven.
+
+Modifications and new ideas, Copyright (c) 2010, DUO Interactive, LLC.
+"""
 import re
 import math
 from django.template import Library, Node, Variable, VariableDoesNotExist, TemplateSyntaxError
@@ -38,12 +49,21 @@ def split_args(args):
     return args_dict
 
 class ThumbnailNode(Node):
+    """
+    Handles the rendering of a thumbnail URL, based on the input gathered
+    from the thumbnail() tag function.
+    """
     def __init__(self, source_var, size_var, opts=None,
                  context_name=None, **kwargs):
+        # Name of the object/attribute pair, ie: some_obj.image
         self.source_var = source_var
+        # Typically a string, '85x85'.
         self.size_var = size_var
         self.opts = opts
+        # If an 'as some_var' is given, this is the context variable name
+        # to store the URL in instead of returning it for rendering.
         self.context_name = context_name
+        # Storage for optional keyword args processed by the tag parser.
         self.kwargs = kwargs
 
     def render(self, context):
