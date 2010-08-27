@@ -118,6 +118,7 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
         Handles some extra logic to generate the thumbnails when the original
         file is uploaded.
         """
+        print "SUIPAH"
         super(ImageWithThumbsFieldFile, self).save(name, content, save)
         
         # see http://code.djangoproject.com/ticket/8222 for details

@@ -109,6 +109,8 @@ class S3BotoStorage(Storage):
         name = self._clean_name(name)
         headers = self.headers
         
+        print "CONTENT", type(content)
+        print "FILE", type(content.file)
         if hasattr(content.file, 'content_type'):
             content_type = content.file.content_type
         else:
