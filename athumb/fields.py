@@ -118,7 +118,6 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
         Handles some extra logic to generate the thumbnails when the original
         file is uploaded.
         """
-        print "SUIPAH"
         super(ImageWithThumbsFieldFile, self).save(name, content, save)
         
         # see http://code.djangoproject.com/ticket/8222 for details
@@ -225,13 +224,8 @@ class ImageWithThumbsField(ImageField):
     
     With the S3BotoStorage backends, the default is to over-write existing files.
     
-    Note: django-thumbs assumes that if filename "any_filename.jpg" is available 
+    Note: django-athumb assumes that if filename "any_filename.jpg" is available 
     filenames with this format "any_filename.[width]x[height].jpg" will be available, too.
-    
-    To do:
-    ======
-    Add method to regenerate thumbnails
-    
     """
     def __init__(self, verbose_name=None, name=None, thumbnail_format=None,
                  width_field=None, height_field=None, sizes=(), **kwargs):

@@ -111,6 +111,10 @@ it, finish the tag with `as [context_var_name]`:
     {% thumbnail image 80x80 as thumb %}
     <img src="{{thumb}}" />
 
+## To-Do
+
+* See the issue tracker for a list of outstanding things needing doing.
+
 ## Change Log
 
 ### 1.0
