@@ -8,7 +8,7 @@ setup(
     version=athumb.VERSION,
     packages=['athumb', 'athumb.backends', 'athumb.management',
               'athumb.management.commands', 'athumb.templatetags'],
-    description='Django static media development and distribution tools',
+    description='A simple, S3-backed thumbnailer field.',
     author='Gregory Taylor',
     author_email='gtaylor@duointeractive.com',
     license='BSD License',
