@@ -9,6 +9,7 @@ setup(
     packages=['athumb', 'athumb.backends', 'athumb.management',
               'athumb.management.commands', 'athumb.templatetags'],
     description='A simple, S3-backed thumbnailer field.',
+    long_description=long_description,
     author='Gregory Taylor',
     author_email='gtaylor@duointeractive.com',
     license='BSD License',
