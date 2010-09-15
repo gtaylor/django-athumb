@@ -72,7 +72,7 @@ class ThumbnailNode(Node):
             # user specified a valid model field.
             relative_source = Variable(self.source_var).resolve(context)
         except VariableDoesNotExist:
-            if settings.DEBUG:
+            if settings.TEMPLATE_DEBUG:
                 raise VariableDoesNotExist("Variable '%s' does not exist." %
                         self.source_var)
             else:
@@ -81,7 +81,7 @@ class ThumbnailNode(Node):
         try:
             requested_size = Variable(self.size_var).resolve(context)
         except VariableDoesNotExist:
-            if settings.DEBUG:
+            if settings.TEMPLATE_DEBUG:
                 raise TemplateSyntaxError("Size argument '%s' is not a"
                         " valid size nor a valid variable." % self.size_var)
             else:
