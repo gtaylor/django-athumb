@@ -49,6 +49,7 @@ class S3BotoStorage(Storage):
                        gzip=IS_GZIPPED, gzip_content_types=GZIP_CONTENT_TYPES,
                        querystring_auth=QUERYSTRING_AUTH,
                        force_no_ssl=False):
+        self.bucket_name = bucket
         self.acl = acl
         self.headers = headers
         self.gzip = gzip
@@ -60,9 +61,12 @@ class S3BotoStorage(Storage):
             access_key, secret_key = self._get_access_keys()
         
         self.connection = S3Connection(access_key, secret_key)
-        self.bucket_name = bucket
-        self.bucket = self._get_or_create_bucket(self.bucket_name)
-        self.bucket.set_acl(self.acl)
+        
+    @property
+    def bucket(self):
+        if not hasattr(self, '_bucket'):
+            self._bucket = self._get_or_create_bucket(self.bucket_name)
+        return self._bucket
     
     def _get_access_keys(self):
         access_key = ACCESS_KEY_NAME
@@ -109,8 +113,6 @@ class S3BotoStorage(Storage):
         name = self._clean_name(name)
         headers = self.headers
         
-        print "CONTENT", type(content)
-        print "FILE", type(content.file)
         if hasattr(content.file, 'content_type'):
             content_type = content.file.content_type
         else:
