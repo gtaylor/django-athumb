@@ -56,6 +56,9 @@ class S3BotoStorage(Storage):
         self.gzip_content_types = gzip_content_types
         self.querystring_auth = querystring_auth
         self.force_no_ssl = force_no_ssl
+        # This is called as chunks are uploaded to S3. Useful for getting
+        # around limitations in eventlet for things like gunicorn.
+        self.s3_callback_during_upload = None
         
         if not access_key and not secret_key:
             access_key, secret_key = self._get_access_keys()
@@ -131,7 +134,8 @@ class S3BotoStorage(Storage):
         k = self.bucket.get_key(name)
         if not k:
             k = self.bucket.new_key(name)
-        k.set_contents_from_file(content, headers=headers, policy=self.acl)
+        k.set_contents_from_file(content, headers=headers, policy=self.acl,
+                                 cb=self.s3_callback_during_upload)
         return name
     
     def delete(self, name):
