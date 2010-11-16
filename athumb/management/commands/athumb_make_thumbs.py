@@ -1,3 +1,4 @@
+import os
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.contenttypes.models import ContentType
 
@@ -37,12 +38,20 @@ class Command(BaseCommand):
         self.parse_input()
         
         Model = self.model
-        instances = Model.objects.filter(user__username='gtaylor')
+        instances = Model.objects.all()
         
         for instance in instances:
             file = getattr(instance, self.field)
+            if not file:
+                continue
+
             field = file.field
 
-            name = field.name
-            content = file.read()
-            file.save(name, content)
+            name = os.path.basename(file.name)
+            content = instance.image
+
+            #print "SCHOOL", instance, instance.id
+            #print "FILE", file, type(file)
+            #print "NAME", name, type(name)
+            #print "CONTENT", content, type(content)
+            instance.image.save(name, content)
