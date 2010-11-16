@@ -114,7 +114,11 @@ class S3BotoStorage(Storage):
 
     def _save(self, name, content):
         name = self._clean_name(name)
-        headers = self.headers
+
+        if callable(self.headers):
+            headers = self.headers(name, content)
+        else:
+            headers = self.headers
 
         if hasattr(content.file, 'content_type'):
             content_type = content.file.content_type
