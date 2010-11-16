@@ -22,17 +22,17 @@ except ImportError:
     raise ImproperlyConfigured, "Could not load Boto's S3 bindings.\
     \nSee http://code.google.com/p/boto/"
 
-ACCESS_KEY_NAME     = getattr(settings, 'AWS_ACCESS_KEY_ID', None)
-SECRET_KEY_NAME     = getattr(settings, 'AWS_SECRET_ACCESS_KEY', None)
-HEADERS             = getattr(settings, 'AWS_HEADERS', {})
+ACCESS_KEY_NAME = getattr(settings, 'AWS_ACCESS_KEY_ID', None)
+SECRET_KEY_NAME = getattr(settings, 'AWS_SECRET_ACCESS_KEY', None)
+HEADERS = getattr(settings, 'AWS_HEADERS', {})
 STORAGE_BUCKET_NAME = getattr(settings, 'AWS_STORAGE_BUCKET_NAME', None)
-AUTO_CREATE_BUCKET  = getattr(settings, 'AWS_AUTO_CREATE_BUCKET', True)
-DEFAULT_ACL         = getattr(settings, 'AWS_DEFAULT_ACL', 'public-read')
-QUERYSTRING_AUTH    = getattr(settings, 'AWS_QUERYSTRING_AUTH', True)
-QUERYSTRING_EXPIRE  = getattr(settings, 'AWS_QUERYSTRING_EXPIRE', 3600)
-LOCATION            = getattr(settings, 'AWS_LOCATION', '')
-IS_GZIPPED          = getattr(settings, 'AWS_IS_GZIPPED', False)
-GZIP_CONTENT_TYPES  = getattr(settings, 'GZIP_CONTENT_TYPES', (
+AUTO_CREATE_BUCKET = getattr(settings, 'AWS_AUTO_CREATE_BUCKET', True)
+DEFAULT_ACL = getattr(settings, 'AWS_DEFAULT_ACL', 'public-read')
+QUERYSTRING_AUTH = getattr(settings, 'AWS_QUERYSTRING_AUTH', True)
+QUERYSTRING_EXPIRE = getattr(settings, 'AWS_QUERYSTRING_EXPIRE', 3600)
+LOCATION = getattr(settings, 'AWS_LOCATION', '')
+IS_GZIPPED = getattr(settings, 'AWS_IS_GZIPPED', False)
+GZIP_CONTENT_TYPES = getattr(settings, 'GZIP_CONTENT_TYPES', (
     'text/css',
     'application/javascript',
     'application/x-javascript'
@@ -43,7 +43,7 @@ if IS_GZIPPED:
 
 class S3BotoStorage(Storage):
     """Amazon Simple Storage Service using Boto"""
-    
+
     def __init__(self, bucket=STORAGE_BUCKET_NAME, access_key=None,
                        secret_key=None, acl=DEFAULT_ACL, headers=HEADERS,
                        gzip=IS_GZIPPED, gzip_content_types=GZIP_CONTENT_TYPES,
@@ -59,31 +59,31 @@ class S3BotoStorage(Storage):
         # This is called as chunks are uploaded to S3. Useful for getting
         # around limitations in eventlet for things like gunicorn.
         self.s3_callback_during_upload = None
-        
+
         if not access_key and not secret_key:
             access_key, secret_key = self._get_access_keys()
-        
+
         self.connection = S3Connection(access_key, secret_key)
-        
+
     @property
     def bucket(self):
         if not hasattr(self, '_bucket'):
             self._bucket = self._get_or_create_bucket(self.bucket_name)
         return self._bucket
-    
+
     def _get_access_keys(self):
         access_key = ACCESS_KEY_NAME
         secret_key = SECRET_KEY_NAME
         if (access_key or secret_key) and (not access_key or not secret_key):
             access_key = os.environ.get(ACCESS_KEY_NAME)
             secret_key = os.environ.get(SECRET_KEY_NAME)
-        
+
         if access_key and secret_key:
             # Both were provided, so use them
             return access_key, secret_key
-        
+
         return None, None
-    
+
     def _get_or_create_bucket(self, name):
         """Retrieves a bucket if it exists, otherwise creates it."""
         try:
@@ -94,7 +94,7 @@ class S3BotoStorage(Storage):
             raise ImproperlyConfigured, ("Bucket specified by "
             "AWS_STORAGE_BUCKET_NAME does not exist. Buckets can be "
             "automatically created by setting AWS_AUTO_CREATE_BUCKET=True")
-    
+
     def _clean_name(self, name):
         # Useful for windows' paths
         return os.path.normpath(name).replace('\\', '/')
@@ -107,20 +107,20 @@ class S3BotoStorage(Storage):
         zfile.close()
         content.file = zbuf
         return content
-        
+
     def _open(self, name, mode='rb'):
         name = self._clean_name(name)
         return S3BotoStorageFile(name, mode, self)
-    
+
     def _save(self, name, content):
         name = self._clean_name(name)
         headers = self.headers
-        
+
         if hasattr(content.file, 'content_type'):
             content_type = content.file.content_type
         else:
             content_type = mimetypes.guess_type(name)[0] or "application/x-octet-stream"
-            
+
         if self.gzip and content_type in self.gzip_content_types:
             content = self._compress_content(content)
             headers.update({'Content-Encoding': 'gzip'})
@@ -129,7 +129,7 @@ class S3BotoStorage(Storage):
             'Content-Type': content_type,
             'Content-Length' : len(content),
         })
-        
+
         content.name = name
         k = self.bucket.get_key(name)
         if not k:
@@ -137,30 +137,30 @@ class S3BotoStorage(Storage):
         k.set_contents_from_file(content, headers=headers, policy=self.acl,
                                  cb=self.s3_callback_during_upload)
         return name
-    
+
     def delete(self, name):
         name = self._clean_name(name)
         self.bucket.delete_key(name)
-    
+
     def exists(self, name):
         name = self._clean_name(name)
         k = Key(self.bucket, name)
         return k.exists()
-    
+
     def listdir(self, name):
         name = self._clean_name(name)
         return [l.name for l in self.bucket.list() if not len(name) or l.name[:len(name)] == name]
-    
+
     def size(self, name):
         name = self._clean_name(name)
         return self.bucket.get_key(name).size
-    
+
     def url(self, name):
         name = self._clean_name(name)
         if self.bucket.get_key(name) is None:
             return ''
-        return self.bucket.get_key(name).generate_url(QUERYSTRING_EXPIRE, 
-                                                      method='GET', 
+        return self.bucket.get_key(name).generate_url(QUERYSTRING_EXPIRE,
+                                                      method='GET',
                                                       query_auth=self.querystring_auth,
                                                       force_http=self.force_no_ssl)
 
@@ -186,8 +186,9 @@ class S3BotoStorage_AllPublic(S3BotoStorage):
     def __init__(self, *args, **kwargs):
         super(S3BotoStorage_AllPublic, self).__init__(acl='public-read',
                                                       querystring_auth=False,
-                                                      force_no_ssl=True)
-        
+                                                      force_no_ssl=True,
+                                                      *args, **kwargs)
+
     def url(self, name):
         """
         Since we assume all public storage with no authorization keys, we can
