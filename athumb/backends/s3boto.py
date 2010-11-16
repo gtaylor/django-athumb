@@ -195,7 +195,7 @@ class S3BotoStorage_AllPublic(S3BotoStorage):
         just simply dump out a URL rather than having to query S3 for new keys.
         """
         name = self._clean_name(name)
-        return "http://%s.s3.amazonaws.com/%s" % (self.bucket_name, name)
+        return "http://s3.amazonaws.com/%s/%s" % (self.bucket_name, name)
 
 class S3BotoStorageFile(File):
     def __init__(self, name, mode, storage):
