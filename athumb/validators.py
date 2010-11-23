@@ -1,6 +1,11 @@
 from django.conf import settings
 from django.core.validators import ValidationError
 
+# A list of allowable thumbnail file extensions.
+ALLOWABLE_THUMBNAIL_EXTENSIONS = getattr(settings, 
+                                         'ALLOWABLE_THUMBNAIL_EXTENSIONS', 
+                                         ['png', 'jpg', 'jpeg', 'gif'])
+
 class ImageUploadExtensionValidator(object):
     """
     Perform some basic image uploading extension validation.
@@ -19,8 +24,8 @@ class ImageUploadExtensionValidator(object):
                                   code='no_extension')
 
         # Restrict allowable extensions.
-        if extension.lower() not in settings.ALLOWABLE_THUMBNAIL_EXTENSIONS:
+        if extension.lower() not in ALLOWABLE_THUMBNAIL_EXTENSIONS:
             # Format for your viewing pleasure.
-            allowable_str = ' '.join(settings.ALLOWABLE_THUMBNAIL_EXTENSIONS)
+            allowable_str = ' '.join(ALLOWABLE_THUMBNAIL_EXTENSIONS)
             raise ValidationError('Your file is not one of the allowable types: %s' % allowable_str,
                                   code='extension_not_allowed')

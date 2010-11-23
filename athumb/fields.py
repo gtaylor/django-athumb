@@ -12,7 +12,7 @@ from django.db.models.fields.files import ImageFieldFile
 from django.conf import settings
 from django.core.cache import cache
 
-from manipulations import generate_thumb_basic
+from manipulations import generate_thumb_basic, sorl_scale_and_crop
 from validators import ImageUploadExtensionValidator
 
 # Models want this instantiated ahead of time.
@@ -48,7 +48,7 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
         
         # Determine what the filename would be for a thumb with these
         # dimensions, regardless of whether it actually exists.
-        new_filename = self._calc_thumb_size_filename((thumb_width, thumb_height))
+        new_filename = self._calc_thumb_filename((thumb_width, thumb_height))
         
         # Slap the new thumbnail filename on the end of the old URL, in place
         # of the orignal image's filename.
@@ -76,7 +76,7 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
         WARNING: NO error checking is performed when asking for a certain
         dimension. This would be time-consuming for the S3 backend.
         
-        TODO: Check the dimensions against the 'sizes' attribute and either warn
+        TODO: Check the dimensions against the 'thumbs' attribute and either warn
         or raise an exception.
         
         name: (str) The attribute that couldn't be found so far.
@@ -128,14 +128,15 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
         if image.mode not in ('L', 'RGB', 'RGBA'):
             image = image.convert('RGBA')
         
-        for size in self.field.sizes:
+        for thumb in self.field.thumbs:
+            thumb_name, thumb_options = thumb
             # Pre-create all of the thumbnail sizes.
-            self.create_and_store_thumb(image, size)
+            self.create_and_store_thumb(image, thumb_options)
             
         #blah = getattr(self, 'url_%d_%d' % (100, 100))
         #print "BLAH", blah
             
-    def _calc_thumb_size_filename(self, size):
+    def _calc_thumb_filename(self, size):
         """
         Calculates the correct filename for a would-be (or potentially
         existing) thumbnail of the given size.
@@ -157,16 +158,21 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
         #print '%s_%sx%s.%s' % (file_name, w, h, file_extension)
         return '%s_%sx%s.%s' % (file_name, w, h, file_extension)
     
-    def create_and_store_thumb(self, image, size):
+    def create_and_store_thumb(self, image, thumb_options):
         """
-        Given that 'content' is a File object, create a thumbnail for the
+        Given that 'image' is a PIL Image object, create a thumbnail for the
         given size tuple and store it via the storage backend.
+        
+        image: (Image) PIL Image object.
+        size: (tuple) Tuple in form of (width, height). Image will be
+            thumbnailed to this size.
         """
-        thumb_name = self._calc_thumb_size_filename(size)
+        size = thumb_options['size']
+        thumb_name = self._calc_thumb_filename(size)
         file_extension = self.get_thumbnail_format()
                 
         # The work starts here.
-        thumb_content = generate_thumb_basic(image, size, file_extension)
+        thumb_content = sorl_scale_and_crop(image, size, file_extension)
         # Save the result to the storage backend.
         thumb_name_ = self.storage.save(thumb_name, thumb_content)        
         
@@ -180,8 +186,8 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
         Deletes the original, plus any thumbnails. Fails silently if there
         are errors deleting the thumbnails.
         """
-        for size in self.field.sizes:
-            thumb_name = self._calc_thumb_size_filename(size)
+        for size in self.field.thumbs:
+            thumb_name = self._calc_thumb_filename(size)
             self.storage.delete(thumb_name)
 
         super(ImageWithThumbsFieldFile, self).delete(save)
@@ -191,7 +197,7 @@ class ImageWithThumbsField(ImageField):
     """
     Usage example:
     ==============
-    photo = ImageWithThumbsField(upload_to='images', sizes=((125,125),(300,200),)
+    photo = ImageWithThumbsField(upload_to='images', thumbs=((125,125),(300,200),)
     
     To retrieve image URL, exactly the same way as with ImageField:
         my_object.photo.url
@@ -199,7 +205,7 @@ class ImageWithThumbsField(ImageField):
         my_object.photo.url_125x125
         my_object.photo.url_300x200
     
-    Note: The 'sizes' attribute is not required. If you don't provide it, 
+    Note: The 'thumbs' attribute is not required. If you don't provide it, 
     ImageWithThumbsField will act as a normal ImageField
         
     How it works:
@@ -228,12 +234,12 @@ class ImageWithThumbsField(ImageField):
     filenames with this format "any_filename.[width]x[height].jpg" will be available, too.
     """
     def __init__(self, verbose_name=None, name=None, thumbnail_format=None,
-                 width_field=None, height_field=None, sizes=(), **kwargs):
+                 width_field=None, height_field=None, thumbs=(), **kwargs):
         self.verbose_name = verbose_name
         self.name = name
         self.width_field = width_field
         self.height_field = height_field
-        self.sizes = sizes
+        self.thumbs = thumbs
         self.thumbnail_format = thumbnail_format
         super(ImageField, self).__init__(validators=[IMAGE_EXTENSION_VALIDATOR], **kwargs)
         
