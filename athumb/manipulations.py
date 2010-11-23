@@ -29,12 +29,12 @@ def generate_thumb_basic(orig_image, thumb_size, format):
         # quad
         xsize, ysize = image.size
         # get minimum size
-        minsize = min(xsize,ysize)
+        minsize = min(xsize, ysize)
         # largest square possible in the image
-        xnewsize = (xsize-minsize)/2
-        ynewsize = (ysize-minsize)/2
+        xnewsize = (xsize - minsize) / 2
+        ynewsize = (ysize - minsize) / 2
         # crop it
-        image2 = image.crop((xnewsize, ynewsize, xsize-xnewsize, ysize-ynewsize))
+        image2 = image.crop((xnewsize, ynewsize, xsize - xnewsize, ysize - ynewsize))
         # load is necessary after crop                
         image2.load()
         # thumbnail of the cropped image (with ANTIALIAS to make it look better)
@@ -43,12 +43,12 @@ def generate_thumb_basic(orig_image, thumb_size, format):
         # not quad
         image2 = image
         image2.thumbnail(thumb_size, Image.ANTIALIAS)
-    
+
     io = cStringIO.StringIO()
     # PNG and GIF are the same, JPG is JPEG
     if format.upper() == 'JPG':
         format = 'JPEG'
-    
+
     image2.save(io, format)
     return ContentFile(io.getvalue())
 
@@ -62,9 +62,9 @@ def image_entropy(im):
     hist = im.histogram()
     hist_size = float(sum(hist))
     hist = [h / hist_size for h in hist]
-    return -sum([p * math.log(p, 2) for p in hist if p != 0])
+    return - sum([p * math.log(p, 2) for p in hist if p != 0])
 
-def sorl_scale_and_crop(im, requested_size, format, opts={}):
+def sorl_scale_and_crop(im, thumb_options, format):
     """
     Generates a thumbnail image and returns a ContentFile object with the thumbnail
     
@@ -73,22 +73,25 @@ def sorl_scale_and_crop(im, requested_size, format, opts={}):
         requested_size: (tuple) Desired thumbnail size, ie: (200,120)
         format: (str) format of the original image ('jpeg','gif','png',...)
             (this format will be used for the generated thumbnail, too)
+        opts: (dict) Options defined in the model field.
             
     Returns:
         A Django ContentFile that may be saved to a field.
     """
+    # Image's current size.
     x, y = [float(v) for v in im.size]
-    xr, yr = [float(v) for v in requested_size]
+    # Desired size.
+    xr, yr = [float(v) for v in thumb_options.get('size')]
 
-    if 'crop' in opts or 'max' in opts:
+    if thumb_options.get('crop', False):
         r = max(xr / x, yr / y)
     else:
         r = min(xr / x, yr / y)
 
-    if r < 1.0 or (r > 1.0 and 'upscale' in opts):
+    if r < 1.0 or (r > 1.0 and thumb_options.get('upscale', False)):
         im = im.resize((int(round(x * r)), int(round(y * r))), resample=Image.ANTIALIAS)
 
-    crop = opts.get('crop') or 'crop' in opts
+    crop = thumb_options.get('crop', False) or thumb_options.has_key('crop')
     if crop:
         # Difference (for x and y) between new image size and requested size.
         x, y = [float(v) for v in im.size]
@@ -148,7 +151,6 @@ def sorl_scale_and_crop(im, requested_size, format, opts={}):
     # PNG and GIF are the same, JPG is JPEG
     if format.upper() == 'JPG':
         format = 'JPEG'
-    
+
     im.save(io, format)
     return ContentFile(io.getvalue())
-sorl_scale_and_crop.valid_options = ('crop', 'upscale', 'max')
