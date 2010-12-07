@@ -83,8 +83,7 @@ class ThumbnailNode(Node):
             requested_name = Variable(self.thumb_name_var).resolve(context)
         except VariableDoesNotExist:
             if settings.TEMPLATE_DEBUG:
-                raise TemplateSyntaxError("Name argument '%s' is not a"
-                        " valid thumbnail." % self.thumb_name_var)
+                raise TemplateSyntaxError("Name argument '%s' is not a valid thumbnail." % self.thumb_name_var)
             else:
                 requested_name = None
 
