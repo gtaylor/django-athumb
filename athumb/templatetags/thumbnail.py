@@ -53,12 +53,13 @@ class ThumbnailNode(Node):
     Handles the rendering of a thumbnail URL, based on the input gathered
     from the thumbnail() tag function.
     """
-    def __init__(self, source_var, size_var, opts=None,
+    def __init__(self, source_var, thumb_name_var, opts=None,
                  context_name=None, **kwargs):
         # Name of the object/attribute pair, ie: some_obj.image
         self.source_var = source_var
         # Typically a string, '85x85'.
-        self.size_var = size_var
+        self.thumb_name_var = thumb_name_var
+
         self.opts = opts
         # If an 'as some_var' is given, this is the context variable name
         # to store the URL in instead of returning it for rendering.
@@ -79,34 +80,18 @@ class ThumbnailNode(Node):
                 relative_source = None
 
         try:
-            requested_size = Variable(self.size_var).resolve(context)
+            requested_name = Variable(self.thumb_name_var).resolve(context)
         except VariableDoesNotExist:
             if settings.TEMPLATE_DEBUG:
-                raise TemplateSyntaxError("Size argument '%s' is not a"
-                        " valid size nor a valid variable." % self.size_var)
+                raise TemplateSyntaxError("Name argument '%s' is not a valid thumbnail." % self.thumb_name_var)
             else:
-                requested_size = None
+                requested_name = None
 
-        # Size variable can be either a tuple/list of two integers or a valid
-        # string, only the string is checked.
-        else:
-            if isinstance(requested_size, basestring):
-                m = REGEXP_THUMB_SIZES.match(requested_size)
-                if m:
-                    requested_size = (int(m.group(1)), int(m.group(2)))
-                elif settings.DEBUG:
-                    raise TemplateSyntaxError("Variable '%s' was resolved but "
-                            "'%s' is not a valid size." %
-                            (self.size_var, requested_size))
-                else:
-                    requested_size = None
-
-        if relative_source is None or requested_size is None:
+        if relative_source is None or requested_name is None:
             # Couldn't resolve the given template variable. Fail silently.
             thumbnail = ''
         else:
             # This is typically a athumb.fields.ImageWithThumbsFieldFile object.
-            thumb_width, thumb_height = requested_size
             try:
                 # Allow the user to override the protocol in the tag.
                 force_ssl = self.kwargs.get('force_ssl', False)
@@ -116,8 +101,7 @@ class ThumbnailNode(Node):
                 ssl_mode = self.is_secure(context) or force_ssl
                 # Get the URL for the thumbnail from the
                 # ImageWithThumbsFieldFile object.  
-                thumbnail = relative_source.generate_url(thumb_width,
-                                                         thumb_height,
+                thumbnail = relative_source.generate_url(requested_name,
                                                          ssl_mode=ssl_mode)
             except ValueError:
                 # This file object doesn't actually have a file. Probably
@@ -133,7 +117,7 @@ class ThumbnailNode(Node):
         context[self.context_name] = thumbnail
 
         return ''
-    
+
     def is_secure(self, context):
         """
         Looks at the RequestContext object and determines if this page is
