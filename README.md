@@ -24,10 +24,9 @@ Source: http://github.com/duointeractive/django-athumb
 ## Requirements
 
 - python >= 2.5
-
 - django >= 1.0
-
-- boto >= 1.8d <= 2.0
+- boto
+- PIL
 
 ## Installation
 
@@ -61,6 +60,44 @@ Then setup some values used by the backend:
     AWS_SECRET_ACCESS_KEY = 'YourS3SecretAccessKeyHere'
     AWS_STORAGE_BUCKET_NAME = 'OneOfYourBuckets'
 
+## Using in models
+
+After you have all of the above configured, you're ready to start using
+athumb in your models. Here is an example model with a thumbnailing field.
+
+    from django.db import models
+    from athumb.fields import ImageWithThumbsField
+    from athumb.backends.s3boto import S3BotoStorage_AllPublic
+    
+    # It is generally good to keep these stored in their own module, to allow
+    # for other models.py modules to import the values. This assumes that more
+    # than one model stores stuff in the same bucket.
+    PUBLIC_MEDIA_BUCKET = S3BotoStorage_AllPublic(bucket='public-media')
+    
+    class YourModel(models.Model)
+        image = ImageWithThumbsField(
+            upload_to="store/product_images",
+            thumbs=(
+                ('50x50_cropped', {'size': (50, 50), 'crop': True}),
+                ('60x60', {'size': (60, 60)}),
+                ('80x1000', {'size': (80, 1000)}),
+                ('front_page', {'size': (120, 1000)}),
+                ('medium', {'size': (161, 1000)}),
+                ('large', {'size': (200, 1000)}),
+            ),
+            blank=True, null=True,
+            storage=PUBLIC_MEDIA_BUCKET)
+            
+A few things to note:
+
+* The tuples in `thumbs` are in the format of `(name, options)`. The value
+  for `name` can be whatever string you'd like. Notice that you can make the
+  names dimensions, or something entirely different.
+* The `storage` keyword is important, used for specifying the bucket for the
+  field. If you don't specify `storage`, the default backend is used. As a
+  shortcut, you could set `S3BotoStorage_AllPublic` as your default backend,
+  and the `AWS_*` values would determine the default bucket.
+
 ### Backends
 
 django-athumb comes with a simplified s3boto backend, modified from those found
@@ -68,8 +105,9 @@ in the django-storages project. For most cases, you'll want to use
 athumb.backends.s3boto.S3BotoStorage_AllPublic, as it does not use HTTPS, and
 is a good bit faster than S3BotoStorage because it makes some assumptions.
 
-NOTE: This package is primarily aimed at serving S3 thumbnails, I have not
-tested it at all with the Django standard backend.
+NOTE: This module is primarily aimed at storing and serving images to/from
+S3. I have not tested it at all with the standard Django Filesystem backend,
+though it *should* work.
 
 ## Template Tags
 
@@ -92,23 +130,30 @@ in settings.py
 
 #### thumbnail
 
-Creates a thumbnail of for an ImageField.
+Creates a thumbnail of for an ImageField. This is in the format of:
 
-To just output the absolute url to the thumbnail:
+    {% thumbnail some_obj.image '50x50_cropped' %}
 
-    {% thumbnail some_obj.image 80x80 %}
+or, to save the value in a template context variable:
+
+    {% thumbnail some_obj.image '50x50_cropped' as 'some_var' %}
+
+To output the absolute url to the thumbnail:
+
+    {% thumbnail some_obj.image '50x50_cropped' %}
+    {% thumbnail some_obj.image '60x60' %}
 
 As long as you've got Django's request context processor in, the thumbnail tag
 will detect when the current view is being served over SSL, and automatically
 convert any http to https in the thumbnail URL. If you want to always force
 SSL for a thumbnail, add it as an argument like this:
 
-    {% thumbnail some_obj.image 80x80 force_ssl=True %}
+    {% thumbnail some_obj.image '60x60' force_ssl=True %}
 
 To put the thumbnail URL on the context instead of just rendering
 it, finish the tag with `as [context_var_name]`:
 
-    {% thumbnail image 80x80 as thumb %}
+    {% thumbnail image '60x60' as 'thumb' %}
     <img src="{{thumb}}" />
 
 ## To-Do
