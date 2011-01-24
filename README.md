@@ -6,16 +6,28 @@ is intended to accept image uploads, thumbnail them, and upload the original
 plus the thumbs to S3. You may then get to the thumbnails in your template
 by doing something like:
 
-    <img src="{% thumbnail some_obj.image 80x80 %}" />
+    <img src="{% thumbnail some_obj.image '80x80' %}" />
     
 This automatically assembles the remote S3 URL to retrieve the thumbnail from.
 No error checking is done, and several assumptions are made for the sake of
 speed.
 
-* If you need a very basic thumbnailer, this is probably what you're looking for.
-* If your needs are more complicated than just re-sizing images and uploading
-  them to S3, this is probably not what you're looking for (unless you'd like to
-  hack on it a bit).
+## Advantages of django-athumb
+
+The primary advantage of django-athumb is that, unlike sorl and others,
+thumbnails are generated at the time of user uploading the original image.
+Instead of generating thumbs on-demand and making the user wait, we get that
+out of the way from the beginning. This leads to a few big benefits:
+
+* We never check for the existence of a file, after the first save/upload. We
+  assume it exists, and skip a whole lot of Disk I/O trying to determine that.
+  This was horrendously slow on sorl + S3, as it had to hit a remote service
+  every time it wanted to know if a thumbnail needed generating.
+* Since we define every possible thumbnail in advance via models.py, we have
+  a defined set of possible values. They can also be more intelligently named
+  than other packages. It is also possible to later add more sizes/thumbs.
+* This may be ran on your own hardware with decent speed. Running it on EC2
+  makes it just that much faster.
 
 All code is under a BSD-style license, see LICENSE for details.
 
@@ -130,18 +142,14 @@ in settings.py
 
 #### thumbnail
 
-Creates a thumbnail of for an ImageField. This is in the format of:
+Returns the URL for the specified thumbnail size (as per the object's
+models.py Model class):
 
     {% thumbnail some_obj.image '50x50_cropped' %}
 
 or, to save the value in a template context variable:
 
-    {% thumbnail some_obj.image '50x50_cropped' as 'some_var' %}
-
-To output the absolute url to the thumbnail:
-
-    {% thumbnail some_obj.image '50x50_cropped' %}
-    {% thumbnail some_obj.image '60x60' %}
+    {% thumbnail some_obj.image 'front_page' as 'some_var' %}
 
 As long as you've got Django's request context processor in, the thumbnail tag
 will detect when the current view is being served over SSL, and automatically
@@ -161,6 +169,13 @@ it, finish the tag with `as [context_var_name]`:
 * See the issue tracker for a list of outstanding things needing doing.
 
 ## Change Log
+
+### 2.0
+
+* Complete re-work of the way thumbnails are specified in models.py.
+* Removal of the attribute-based image field size retrieval, since we no
+  longer are just limited to dimensions.
+* Further misc. improvements.
 
 ### 1.0
 
