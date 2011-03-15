@@ -213,11 +213,15 @@ class S3BotoStorageFile(File):
 
     @property
     def size(self):
+        if not self.key:
+            raise IOError('No such S3 key: %s' % self.name)
         return self.key.size
 
     def read(self, *args, **kwargs):
         self.file = StringIO()
         self._is_dirty = False
+        if not self.key:
+            raise IOError('No such S3 key: %s' % self.name)
         self.key.get_contents_to_file(self.file)
         return self.file.getvalue()
 
