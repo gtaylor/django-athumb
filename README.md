@@ -54,7 +54,7 @@ which will install the application into python's site-packages directory.
 
 Add to INSTALLED_APPS:
 
-	'athumb'
+    'athumb'
 
 Add to TEMPLATE_CONTEXT_PROCESSORS in settings.py:
 
