@@ -61,9 +61,18 @@ class Command(BaseCommand):
             print "(%d/%d) %s" % (counter, num_instances, file_name)
 
             try:
-                file_contents = ContentFile(file.read())
+                fdat = file.read()
+            except IOError:
+                # Key didn't exist.
+                print "(Skipped)"
+                counter += 1
+                continue
+
+            try:
+                file_contents = ContentFile(fdat)
             except ValueError:
                 # This field has no file associated with it, skip it.
+                print "(Skipped)"
                 counter += 1
                 continue
 
