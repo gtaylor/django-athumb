@@ -3,8 +3,6 @@
 Fields, FieldFiles, and Validators.
 """
 import os
-import cStringIO
-import re
 
 from PIL import Image
 from django.db.models import ImageField
@@ -12,7 +10,7 @@ from django.db.models.fields.files import ImageFieldFile
 from django.conf import settings
 from django.core.cache import cache
 
-from manipulations import generate_thumb_basic, sorl_scale_and_crop
+from manipulations import sorl_scale_and_crop
 from validators import ImageUploadExtensionValidator
 
 try:
@@ -178,7 +176,7 @@ class ImageWithThumbsField(ImageField):
 
         if not kwargs.has_key('validators'):
             kwargs['validators'] = [IMAGE_EXTENSION_VALIDATOR]
-            
+
         if not kwargs.has_key('max_length'):
             kwargs['max_length'] = 255
 
