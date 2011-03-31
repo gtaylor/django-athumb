@@ -73,7 +73,12 @@ def sorl_scale_and_crop(im, thumb_options, format):
             # See if the image should be "smart cropped".
             else:
                 # Center cropping (default).
-                ex, ey = dx / 2, dy / 2
+                ex = int(dx / 2)
+                ey = int(dy / 2)
+                x = int(x)
+                y = int(y)
+                dx = int(dx)
+                dy = int(dy)
                 box = [ex, ey, x - ex, y - ey]
                 left = top = 0
                 right, bottom = x, y

@@ -100,9 +100,16 @@ class ThumbnailNode(Node):
                 # this to work. Also, factor in force_ssl.
                 ssl_mode = self.is_secure(context) or force_ssl
                 # Get the URL for the thumbnail from the
-                # ImageWithThumbsFieldFile object.  
-                thumbnail = relative_source.generate_url(requested_name,
-                                                         ssl_mode=ssl_mode)
+                # ImageWithThumbsFieldFile object.
+                try:
+                    thumbnail = relative_source.generate_url(requested_name,
+                                                             ssl_mode=ssl_mode)
+                except:
+                    #import traceback
+                    #traceback.print_stack()
+                    print "ERROR: Using {% thumbnail %} tag with "\
+                          "a regular ImageField instead of ImageWithThumbsField:", self.source_var
+                    return ''
             except ValueError:
                 # This file object doesn't actually have a file. Probably
                 # model field with a None value.
