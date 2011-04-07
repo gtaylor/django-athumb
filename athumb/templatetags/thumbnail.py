@@ -60,7 +60,6 @@ class ThumbnailNode(Node):
         # Typically a string, '85x85'.
         self.thumb_name_var = thumb_name_var
 
-        self.opts = opts
         # If an 'as some_var' is given, this is the context variable name
         # to store the URL in instead of returning it for rendering.
         self.context_name = context_name
@@ -193,8 +192,6 @@ def thumbnail(parser, token):
         if arg in TAG_SETTINGS and value is not None:
             kwargs[str(arg)] = value
             continue
-        if arg in VALID_OPTIONS:
-            opts[arg] = value
         else:
             raise TemplateSyntaxError("'%s' tag received a bad argument: "
                                       "'%s'" % (tag, arg))
