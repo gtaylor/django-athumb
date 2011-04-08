@@ -90,6 +90,8 @@ class ThumbnailNode(Node):
             # Couldn't resolve the given template variable. Fail silently.
             thumbnail = ''
         else:
+            # Spaces at the end of sizes is just not OK.
+            requested_name = requested_name.strip()
             # This is typically a athumb.fields.ImageWithThumbsFieldFile object.
             try:
                 # Allow the user to override the protocol in the tag.
