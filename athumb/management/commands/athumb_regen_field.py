@@ -52,24 +52,43 @@ class Command(BaseCommand):
         Model = self.model
         instances = Model.objects.all()
         num_instances = instances.count()
+        # Filenames are keys in here, to help avoid re-genning something that
+        # we have already done.
+        regen_tracker = {}
 
         counter = 1
         for instance in instances:
             file = getattr(instance, self.field)
             if not file:
-                print "(Skipped)"
+                print "(%d/%d) ID: %d -- Skipped -- No file" % (counter,
+                                                                num_instances,
+                                                                instance.id)
                 counter += 1
                 continue
 
             file_name = os.path.basename(file.name)
+
+            if regen_tracker.has_key(file_name):
+                print "(%d/%d) ID: %d -- Skipped -- Already re-genned %s" % (
+                                                    counter,
+                                                    instance.id,
+                                                    num_instances,
+                                                    file_name)
+                counter += 1
+                continue
+
             # Keep them informed on the progress.
-            print "(%d/%d) %s" % (counter, num_instances, file_name)
+            print "(%d/%d) ID: %d -- %s" % (counter, num_instances,
+                                            instance.id, file_name)
 
             try:
                 fdat = file.read()
             except IOError:
                 # Key didn't exist.
-                print "(Skipped)"
+                print "(%d/%d) ID %d -- Skipped -- File missing on S3" % (
+                                                              counter,
+                                                              num_instances,
+                                                              instance.id)
                 counter += 1
                 continue
 
@@ -77,11 +96,15 @@ class Command(BaseCommand):
                 file_contents = ContentFile(fdat)
             except ValueError:
                 # This field has no file associated with it, skip it.
-                print "(Skipped)"
+                print "(%d/%d) ID %d --  Skipped -- No file on field)" % (
+                                                              counter,
+                                                              num_instances,
+                                                              instance.id)
                 counter += 1
                 continue
 
             # Saving pumps it back through the thumbnailer, if this is a
             # ThumbnailField. If not, it's still pretty harmless.
             file.save(file_name, file_contents)
+            regen_tracker[file_name] = True
             counter += 1
