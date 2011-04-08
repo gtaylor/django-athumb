@@ -40,6 +40,7 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
         cache_key = "Thumbcache_%s_%s%s" % (self.url,
                                                thumb_name,
                                                ssl_postfix)
+        cache_key = cache_key.strip()
 
         cached_val = cache.get(cache_key)
         if cached_val:
