@@ -56,6 +56,11 @@ class Command(BaseCommand):
         counter = 1
         for instance in instances:
             file = getattr(instance, self.field)
+            if not file:
+                print "(Skipped)"
+                counter += 1
+                continue
+
             file_name = os.path.basename(file.name)
             # Keep them informed on the progress.
             print "(%d/%d) %s" % (counter, num_instances, file_name)
