@@ -27,6 +27,7 @@ ACCESS_KEY_NAME = getattr(settings, 'AWS_ACCESS_KEY_ID', None)
 SECRET_KEY_NAME = getattr(settings, 'AWS_SECRET_ACCESS_KEY', None)
 HEADERS = getattr(settings, 'AWS_HEADERS', {})
 STORAGE_BUCKET_NAME = getattr(settings, 'AWS_STORAGE_BUCKET_NAME', None)
+STORAGE_BUCKET_CNAME = getattr(settings, 'AWS_STORAGE_BUCKET_CNAME', None)
 AUTO_CREATE_BUCKET = getattr(settings, 'AWS_AUTO_CREATE_BUCKET', True)
 DEFAULT_ACL = getattr(settings, 'AWS_DEFAULT_ACL', 'public-read')
 QUERYSTRING_AUTH = getattr(settings, 'AWS_QUERYSTRING_AUTH', True)
@@ -45,12 +46,15 @@ if IS_GZIPPED:
 class S3BotoStorage(Storage):
     """Amazon Simple Storage Service using Boto"""
 
-    def __init__(self, bucket=STORAGE_BUCKET_NAME, access_key=None,
-                       secret_key=None, acl=DEFAULT_ACL, headers=HEADERS,
-                       gzip=IS_GZIPPED, gzip_content_types=GZIP_CONTENT_TYPES,
+    def __init__(self, bucket=STORAGE_BUCKET_NAME,
+                       bucket_cname=STORAGE_BUCKET_CNAME,
+                       access_key=None, secret_key=None, acl=DEFAULT_ACL,
+                       headers=HEADERS, gzip=IS_GZIPPED,
+                       gzip_content_types=GZIP_CONTENT_TYPES,
                        querystring_auth=QUERYSTRING_AUTH,
                        force_no_ssl=False):
         self.bucket_name = bucket
+        self.bucket_cname = bucket_cname
         self.acl = acl
         self.headers = headers
         self.gzip = gzip
@@ -200,8 +204,8 @@ class S3BotoStorage_AllPublic(S3BotoStorage):
         just simply dump out a URL rather than having to query S3 for new keys.
         """
         name = self._clean_name(name)
-        if hasattr(settings, 'AWS_S3_CUSTOM_DOMAIN'):
-            return "http://%s/%s" % (settings.AWS_S3_CUSTOM_DOMAIN, name)
+        if self.bucket_cname:
+            return "http://%s/%s" % (self.bucket_cname, name)
         else:
             return "http://s3.amazonaws.com/%s/%s" % (self.bucket_name, name)
 
