@@ -169,6 +169,22 @@ class S3BotoStorage(Storage):
                                                       query_auth=self.querystring_auth,
                                                       force_http=self.force_no_ssl)
 
+    def url_as_attachment(self, name, filename=None):
+        name = self._clean_name(name)
+        if self.bucket.get_key(name) is None:
+            return ''
+
+        disposition = 'attachment; filename="%s"' % filename
+        response_headers = {
+            'response-content-disposition': disposition,
+        }
+
+        return self.connection.generate_url(QUERYSTRING_EXPIRE, 'GET',
+                                            bucket=self.bucket.name, key=name,
+                                            query_auth=True,
+                                            force_http=self.force_no_ssl,
+                                            response_headers=response_headers)
+
     def get_available_name(self, name):
         """ Overwrite existing file with the same name. """
         name = self._clean_name(name)
