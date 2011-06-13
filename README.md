@@ -72,6 +72,11 @@ Then setup some values used by the backend:
     AWS_SECRET_ACCESS_KEY = 'YourS3SecretAccessKeyHere'
     AWS_STORAGE_BUCKET_NAME = 'OneOfYourBuckets'
 
+If you would like to use a vanity domain instead of s3.amazonaws.com, you
+first should configure it in amazon and then add this to settings:
+
+    AWS_STORAGE_BUCKET_CNAME = 'static.yourdomain.com'
+
 ## Using in models
 
 After you have all of the above configured, you're ready to start using
