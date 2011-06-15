@@ -175,8 +175,6 @@ class S3BotoStorage(Storage):
 
     def url_as_attachment(self, name, filename=None):
         name = self._clean_name(name)
-        if self.bucket.get_key(name) is None:
-            return ''
 
         disposition = 'attachment; filename="%s"' % filename
         response_headers = {
