@@ -176,7 +176,11 @@ class S3BotoStorage(Storage):
     def url_as_attachment(self, name, filename=None):
         name = self._clean_name(name)
 
-        disposition = 'attachment; filename="%s"' % filename
+        if filename:
+            disposition = 'attachment; filename="%s"' % filename
+        else:
+            disposition = 'attachment;'
+
         response_headers = {
             'response-content-disposition': disposition,
         }
