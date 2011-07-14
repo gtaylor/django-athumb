@@ -3,22 +3,30 @@
 Fields, FieldFiles, and Validators.
 """
 import os
+import cStringIO
 
 from PIL import Image
 from django.db.models import ImageField
 from django.db.models.fields.files import ImageFieldFile
 from django.conf import settings
 from django.core.cache import cache
+from django.core.files.base import ContentFile
+from pial.engines.pil_engine import PILEngine
 
-from manipulations import sorl_scale_and_crop
 from validators import ImageUploadExtensionValidator
 
 try:
+    #noinspection PyUnresolvedReferences
     from south.modelsinspector import add_introspection_rules
     add_introspection_rules([], ["^athumb\.fields\.ImageWithThumbsField"])
 except ImportError:
     # Not using South, no big deal.
     pass
+
+# TODO: Make this configurable.
+# Thumbnailing is done through here. Eventually we can support image libraries
+# other than PIL.
+THUMBNAIL_ENGINE = PILEngine()
 
 # Cache URLs for thumbnails so we don't have to keep re-generating them.
 THUMBNAIL_URL_CACHE_TIME = getattr(settings, 'THUMBNAIL_URL_CACHE_TIME', 3600 * 24)
@@ -104,9 +112,6 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
             # Pre-create all of the thumbnail sizes.
             self.create_and_store_thumb(image, thumb_name, thumb_options)
 
-        #blah = getattr(self, 'url_%d_%d' % (100, 100))
-        #print "BLAH", blah
-
     def _calc_thumb_filename(self, thumb_name):
         """
         Calculates the correct filename for a would-be (or potentially
@@ -135,18 +140,34 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
             thumbnailed to this size.
         """
         size = thumb_options['size']
+        upscale = thumb_options.get('upscale', True)
+        crop = thumb_options.get('crop')
+        if crop is True:
+            # We'll just make an assumption here. Center cropping is the
+            # typical default.
+            crop = 'center'
+
         thumb_filename = self._calc_thumb_filename(thumb_name)
         file_extension = self.get_thumbnail_format()
 
         # The work starts here.
-        thumb_content = sorl_scale_and_crop(image, thumb_options, file_extension)
-        # Save the result to the storage backend.
-        thumb_name_ = self.storage.save(thumb_filename, thumb_content)
+        thumbed_image = THUMBNAIL_ENGINE.create_thumbnail(
+            image,
+            size,
+            crop=crop,
+            upscale=upscale
+        )
 
-        # Some back-ends don't like over-writing stuff. I guess. Not sure
-        # if this is necessary.
-        if not thumb_filename == thumb_name_:
-            raise ValueError('There is already a file named %s' % thumb_filename)
+        # TODO: Avoiding hitting the disk here, but perhaps we should use temp
+        # files down the road? Big images might choke us as we do part in
+        # RAM then hit swap.
+        img_fobj = cStringIO.StringIO()
+        # This writes the thumbnailed PIL.Image to the file-like object.
+        THUMBNAIL_ENGINE.write(thumbed_image, img_fobj, format=file_extension)
+        # Save the result to the storage backend.
+        thumb_content = ContentFile(img_fobj.getvalue())
+        self.storage.save(thumb_filename, thumb_content)
+        img_fobj.close()
 
     def delete(self, save=True):
         """
@@ -173,7 +194,7 @@ class ImageWithThumbsField(ImageField):
 
     def __init__(self, *args, **kwargs):
         self.thumbs = kwargs.pop('thumbs', ())
-        self.thumbnail_format = kwargs.pop('thumbnail_format', None)
+        self.thumbnail_format = kwargs.pop('thumbnail_format')
 
         if not kwargs.has_key('validators'):
             kwargs['validators'] = [IMAGE_EXTENSION_VALIDATOR]
