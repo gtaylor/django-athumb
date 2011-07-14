@@ -193,7 +193,6 @@ class ImageWithThumbsField(ImageField):
     attr_class = ImageWithThumbsFieldFile
 
     def __init__(self, *args, **kwargs):
-        print "KWARGS", kwargs
         self.thumbs = kwargs.pop('thumbs', ())
         self.thumbnail_format = kwargs.pop('thumbnail_format', None)
 
