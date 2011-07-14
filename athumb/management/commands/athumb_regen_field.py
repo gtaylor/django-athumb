@@ -85,7 +85,7 @@ class Command(BaseCommand):
                 fdat = file.read()
             except IOError:
                 # Key didn't exist.
-                print "(%d/%d) ID %d -- Skipped -- File missing on S3" % (
+                print "(%d/%d) ID %d -- Error -- File missing on S3" % (
                                                               counter,
                                                               num_instances,
                                                               instance.id)
@@ -105,6 +105,16 @@ class Command(BaseCommand):
 
             # Saving pumps it back through the thumbnailer, if this is a
             # ThumbnailField. If not, it's still pretty harmless.
-            file.save(file_name, file_contents)
+
+            try:
+                file.save(file_name, file_contents)
+            except IOError, e:
+                print "(%d/%d) ID %d --  Error -- Image may be corrupt)" % (
+                    counter,
+                    num_instances,
+                    instance.id)
+                counter += 1
+                continue
+
             regen_tracker[file_name] = True
             counter += 1
