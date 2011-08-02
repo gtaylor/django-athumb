@@ -143,8 +143,12 @@ class S3BotoStorage(Storage):
         k = self.bucket.get_key(name)
         if not k:
             k = self.bucket.new_key(name)
+        # The callback seen here is particularly important for async WSGI
+        # servers. This allows us to call back to eventlet or whatever
+        # async support library we're using periodically to prevent timeouts.
         k.set_contents_from_file(content, headers=headers, policy=self.acl,
-                                 cb=self.s3_callback_during_upload)
+                                 cb=self.s3_callback_during_upload,
+                                 num_cb=-1)
         return name
 
     def delete(self, name):
