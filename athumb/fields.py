@@ -38,21 +38,25 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
     """
     Serves as the file-level storage object for thumbnails.
     """
-    def generate_url(self, thumb_name, ssl_mode=False):
+    def generate_url(self, thumb_name, ssl_mode=False, check_cache=True, cache_bust=True):
         # This is tacked on to the end of the cache key to make sure SSL
         # URLs are stored separate from plain http.
         ssl_postfix = '_ssl' if ssl_mode else ''
 
         # Try to see if we can hit the cache instead of asking the storage
         # backend for the URL. This is particularly important for S3 backends.
-        cache_key = "Thumbcache_%s_%s%s" % (self.url,
-                                               thumb_name,
-                                               ssl_postfix)
-        cache_key = cache_key.strip()
 
-        cached_val = cache.get(cache_key)
-        if cached_val:
-            return cached_val
+        cache_key = None
+
+        if check_cache:
+            cache_key = "Thumbcache_%s_%s%s" % (self.url,
+                                                   thumb_name,
+                                                   ssl_postfix)
+            cache_key = cache_key.strip()
+
+            cached_val = cache.get(cache_key)
+            if cached_val:
+                return cached_val
 
         # Determine what the filename would be for a thumb with these
         # dimensions, regardless of whether it actually exists.
@@ -67,15 +71,19 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
 
         # Slap the new thumbnail filename on the end of the old URL, in place
         # of the orignal image's filename.
-        new_url = "%s/%s?cbust=%s" % (url_minus_filename,
-                                      os.path.basename(new_filename),
-                                      settings.MEDIA_CACHE_BUSTER)
+        new_url = "%s/%s" % (url_minus_filename,
+                                      os.path.basename(new_filename))
+
+        if cache_bust:
+            new_url = "%s?cbust=%s" % (new_url, settings.MEDIA_CACHE_BUSTER)
 
         if ssl_mode:
             new_url = new_url.replace('http://', 'https://')
 
-        # Cache this so we don't have to hit the storage backend for a while.
-        cache.set(cache_key, new_url, THUMBNAIL_URL_CACHE_TIME)
+        if cache_key:
+            # Cache this so we don't have to hit the storage backend for a while.
+            cache.set(cache_key, new_url, THUMBNAIL_URL_CACHE_TIME)
+
         return new_url
 
     def get_thumbnail_format(self):
@@ -98,7 +106,9 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
         file is uploaded.
         """
         super(ImageWithThumbsFieldFile, self).save(name, content, save)
+        self.generate_thumbs(self, name, content)
 
+    def generate_thumbs(self, name, content):
         # see http://code.djangoproject.com/ticket/8222 for details
         content.seek(0)
         image = Image.open(content)
@@ -111,6 +121,8 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
             thumb_name, thumb_options = thumb
             # Pre-create all of the thumbnail sizes.
             self.create_and_store_thumb(image, thumb_name, thumb_options)
+
+        image.close()
 
     def _calc_thumb_filename(self, thumb_name):
         """
