@@ -106,7 +106,7 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
         file is uploaded.
         """
         super(ImageWithThumbsFieldFile, self).save(name, content, save)
-        self.generate_thumbs(self, name, content)
+        self.generate_thumbs(name, content)
 
     def generate_thumbs(self, name, content):
         # see http://code.djangoproject.com/ticket/8222 for details
@@ -121,8 +121,6 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
             thumb_name, thumb_options = thumb
             # Pre-create all of the thumbnail sizes.
             self.create_and_store_thumb(image, thumb_name, thumb_options)
-
-        image.close()
 
     def _calc_thumb_filename(self, thumb_name):
         """
