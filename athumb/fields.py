@@ -122,8 +122,6 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
             # Pre-create all of the thumbnail sizes.
             self.create_and_store_thumb(image, thumb_name, thumb_options)
 
-        image.close()
-
     def _calc_thumb_filename(self, thumb_name):
         """
         Calculates the correct filename for a would-be (or potentially
