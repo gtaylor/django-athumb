@@ -77,6 +77,14 @@ first should configure it in amazon and then add this to settings:
 
     AWS_STORAGE_BUCKET_CNAME = 'static.yourdomain.com'
 
+If you want a cache buster for your thumbnails (a string added to the end of
+the image URL that causes browsers to re-fetch the image after changes), you
+can set a value like this:
+
+    MEDIA_CACHE_BUSTER = 'SomeValue'
+
+You do not need to specify a cache buster.
+
 ## Using in models
 
 After you have all of the above configured, you're ready to start using
@@ -174,6 +182,11 @@ it, finish the tag with `as [context_var_name]`:
 * See the issue tracker for a list of outstanding things needing doing.
 
 ## Change Log
+
+### 2.1
+
+* Make MEDIA_CACHE_BUSTER optional.
+* Documented MEDIA_CACHE_BUSTER.
 
 ### 2.0
 

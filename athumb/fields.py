@@ -30,6 +30,8 @@ THUMBNAIL_ENGINE = PILEngine()
 
 # Cache URLs for thumbnails so we don't have to keep re-generating them.
 THUMBNAIL_URL_CACHE_TIME = getattr(settings, 'THUMBNAIL_URL_CACHE_TIME', 3600 * 24)
+# Optional cache-buster string to append to end of thumbnail URLs.
+MEDIA_CACHE_BUSTER = getattr(settings, 'MEDIA_CACHE_BUSTER', '')
 
 # Models want this instantiated ahead of time.
 IMAGE_EXTENSION_VALIDATOR = ImageUploadExtensionValidator()
@@ -74,8 +76,8 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
         new_url = "%s/%s" % (url_minus_filename,
                                       os.path.basename(new_filename))
 
-        if cache_bust:
-            new_url = "%s?cbust=%s" % (new_url, settings.MEDIA_CACHE_BUSTER)
+        if cache_bust and MEDIA_CACHE_BUSTER:
+            new_url = "%s?cbust=%s" % (new_url, MEDIA_CACHE_BUSTER)
 
         if ssl_mode:
             new_url = new_url.replace('http://', 'https://')
