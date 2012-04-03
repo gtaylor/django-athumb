@@ -4,6 +4,7 @@ http://code.welldev.org/django-storages/src/tip/AUTHORS
 """
 import os
 import mimetypes
+import re
 
 try:
     from cStringIO import StringIO
@@ -23,12 +24,23 @@ except ImportError:
     raise ImproperlyConfigured, "Could not load Boto's S3 bindings.\
     \nSee http://code.google.com/p/boto/"
 
+
+AWS_REGIONS = [
+    'EU',
+    'us-west-1',
+    'us-west-2',
+    'sa-east-1',
+    'ap-northeast-1',
+    'ap-southeast-1',
+]
+REGION_RE = re.compile(r's3-(.+).amazonaws.com')
+
 ACCESS_KEY_NAME = getattr(settings, 'AWS_ACCESS_KEY_ID', None)
 SECRET_KEY_NAME = getattr(settings, 'AWS_SECRET_ACCESS_KEY', None)
 HEADERS = getattr(settings, 'AWS_HEADERS', {})
 STORAGE_BUCKET_NAME = getattr(settings, 'AWS_STORAGE_BUCKET_NAME', None)
 STORAGE_BUCKET_CNAME = getattr(settings, 'AWS_STORAGE_BUCKET_CNAME', None)
-AWS_REGION = getattr(settings, 'AWS_REGION', 'us-east-1')
+AWS_REGION = getattr(settings, 'AWS_REGION', '')
 AUTO_CREATE_BUCKET = getattr(settings, 'AWS_AUTO_CREATE_BUCKET', True)
 DEFAULT_ACL = getattr(settings, 'AWS_DEFAULT_ACL', 'public-read')
 QUERYSTRING_AUTH = getattr(settings, 'AWS_QUERYSTRING_AUTH', True)
@@ -58,7 +70,7 @@ class S3BotoStorage(Storage):
                        force_no_ssl=False):
         self.bucket_name = bucket
         self.bucket_cname = bucket_cname
-        self.region = region
+        self.host = self._get_host(region)
         self.acl = acl
         self.headers = headers
         self.gzip = gzip
@@ -73,7 +85,7 @@ class S3BotoStorage(Storage):
             access_key, secret_key = self._get_access_keys()
 
         self.connection = S3Connection(
-            access_key, secret_key, host=self.region,
+            access_key, secret_key, host=self.host,
         )
 
     @property
@@ -94,6 +106,19 @@ class S3BotoStorage(Storage):
             return access_key, secret_key
 
         return None, None
+
+    def _get_host(self, region):
+        """Returns correctly formatted host
+           Accepted formats::
+
+               - simple region name, eg 'us-west-1' (see list in AWS_REGIONS)
+               - full host name, eg 's3-us-west-1.amazonaws.com'
+        """
+        if region in AWS_REGIONS:
+            return 's3-%s.amazonaws.com' % region
+        elif region and not REGION_RE.findall(region):
+            raise ImproperlyConfigured, ('AWS_REGION improperly configured !')
+        return  region  # can be full host or empty string, default region
 
     def _get_or_create_bucket(self, name):
         """Retrieves a bucket if it exists, otherwise creates it."""
@@ -235,10 +260,10 @@ class S3BotoStorage_AllPublic(S3BotoStorage):
         name = self._clean_name(name)
         if self.bucket_cname:
             return "http://%s/%s" % (self.bucket_cname, name)
-        else:
-            return "http://s3-%s.amazonaws.com/%s/%s" % (
-                self.region, self.bucket_name, name,
-            )
+        elif self.host:
+            return "http://%s/%s/%s" % (self.host, self.bucket_name, name)
+        # No host ? Then it's the default region
+        return "http://s3.amazonaws.com/%s/%s" % (self.bucket_name, name)
 
 
 class S3BotoStorageFile(File):
