@@ -28,6 +28,7 @@ SECRET_KEY_NAME = getattr(settings, 'AWS_SECRET_ACCESS_KEY', None)
 HEADERS = getattr(settings, 'AWS_HEADERS', {})
 STORAGE_BUCKET_NAME = getattr(settings, 'AWS_STORAGE_BUCKET_NAME', None)
 STORAGE_BUCKET_CNAME = getattr(settings, 'AWS_STORAGE_BUCKET_CNAME', None)
+AWS_REGION = getattr(settings, 'AWS_REGION', 'us-east-1')
 AUTO_CREATE_BUCKET = getattr(settings, 'AWS_AUTO_CREATE_BUCKET', True)
 DEFAULT_ACL = getattr(settings, 'AWS_DEFAULT_ACL', 'public-read')
 QUERYSTRING_AUTH = getattr(settings, 'AWS_QUERYSTRING_AUTH', True)
@@ -43,18 +44,21 @@ GZIP_CONTENT_TYPES = getattr(settings, 'GZIP_CONTENT_TYPES', (
 if IS_GZIPPED:
     from gzip import GzipFile
 
+
 class S3BotoStorage(Storage):
     """Amazon Simple Storage Service using Boto"""
 
     def __init__(self, bucket=STORAGE_BUCKET_NAME,
                        bucket_cname=STORAGE_BUCKET_CNAME,
-                       access_key=None, secret_key=None, acl=DEFAULT_ACL,
+                       region=AWS_REGION, access_key=None,
+                       secret_key=None, acl=DEFAULT_ACL,
                        headers=HEADERS, gzip=IS_GZIPPED,
                        gzip_content_types=GZIP_CONTENT_TYPES,
                        querystring_auth=QUERYSTRING_AUTH,
                        force_no_ssl=False):
         self.bucket_name = bucket
         self.bucket_cname = bucket_cname
+        self.region = region
         self.acl = acl
         self.headers = headers
         self.gzip = gzip
@@ -68,7 +72,9 @@ class S3BotoStorage(Storage):
         if not access_key and not secret_key:
             access_key, secret_key = self._get_access_keys()
 
-        self.connection = S3Connection(access_key, secret_key)
+        self.connection = S3Connection(
+            access_key, secret_key, host=self.region,
+        )
 
     @property
     def bucket(self):
@@ -200,17 +206,18 @@ class S3BotoStorage(Storage):
         name = self._clean_name(name)
         return name
 
+
 class S3BotoStorage_AllPublic(S3BotoStorage):
     """
     Same as S3BotoStorage, but defaults to uploading everything with a
     public acl. This has two primary beenfits:
-    
+
     1) Non-encrypted requests just make a lot better sense for certain things
        like profile images. Much faster, no need to generate S3 auth keys.
     2) Since we don't have to hit S3 for auth keys, this backend is much
        faster than S3BotoStorage, as it makes no attempt to validate whether
        keys exist.
-       
+
     WARNING: This backend makes absolutely no attempt to verify whether the
     given key exists on self.url(). This is much faster, but be aware.
     """
@@ -230,6 +237,7 @@ class S3BotoStorage_AllPublic(S3BotoStorage):
             return "http://%s/%s" % (self.bucket_cname, name)
         else:
             return "http://s3.amazonaws.com/%s/%s" % (self.bucket_name, name)
+
 
 class S3BotoStorageFile(File):
     def __init__(self, name, mode, storage):
