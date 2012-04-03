@@ -236,7 +236,9 @@ class S3BotoStorage_AllPublic(S3BotoStorage):
         if self.bucket_cname:
             return "http://%s/%s" % (self.bucket_cname, name)
         else:
-            return "http://s3.amazonaws.com/%s/%s" % (self.bucket_name, name)
+            return "http://s3-%s.amazonaws.com/%s/%s" % (
+                self.region, self.bucket_name, name,
+            )
 
 
 class S3BotoStorageFile(File):
