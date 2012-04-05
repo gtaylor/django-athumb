@@ -134,6 +134,7 @@ NOTE: This module is primarily aimed at storing and serving images to/from
 S3. I have not tested it at all with the standard Django Filesystem backend,
 though it *should* work.
 
+
 ## Template Tags
 
 When referring to media in HTML templates you can use custom template tags. 
@@ -177,9 +178,21 @@ it, finish the tag with `as [context_var_name]`:
     {% thumbnail image '60x60' as 'thumb' %}
     <img src="{{thumb}}" />
 
+
+## manage.py commands
+
+### athumb_regen_field
+
+    # ./manage.py athumb_regen_field <app.model> <field>
+
+Re-generates thumbnails for all instances of the given model, for the given
+field.
+
+
 ## To-Do
 
 * See the issue tracker for a list of outstanding things needing doing.
+
 
 ## Change Log
 
