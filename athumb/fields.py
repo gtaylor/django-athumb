@@ -11,6 +11,7 @@ from django.db.models.fields.files import ImageFieldFile
 from django.conf import settings
 from django.core.cache import cache
 from django.core.files.base import ContentFile
+from athumb.exceptions import UploadedImageIsUnreadableError
 from pial.engines.pil_engine import PILEngine
 
 from validators import ImageUploadExtensionValidator
@@ -108,7 +109,16 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
         file is uploaded.
         """
         super(ImageWithThumbsFieldFile, self).save(name, content, save)
-        self.generate_thumbs(name, content)
+        try:
+            self.generate_thumbs(name, content)
+        except IOError, exc:
+            if 'cannot identify' in exc.message:
+                raise UploadedImageIsUnreadableError(
+                    "We were unable to read the uploaded image. "
+                    "Please make sure you are uploading a valid image file."
+                )
+            else:
+                raise
 
     def generate_thumbs(self, name, content):
         # see http://code.djangoproject.com/ticket/8222 for details

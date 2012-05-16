@@ -201,6 +201,11 @@ field.
 
 ## Change Log
 
+### 2.2
+
+* Added support for different S3 regions via the AWS_REGION setting.
+* Improved error handling.
+
 ### 2.1
 
 * Make MEDIA_CACHE_BUSTER optional.
