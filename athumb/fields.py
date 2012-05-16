@@ -112,7 +112,8 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
         try:
             self.generate_thumbs(name, content)
         except IOError, exc:
-            if 'cannot identify' in exc.message:
+            if 'cannot identify' in exc.message or \
+               'bad EPS header' in exc.message:
                 raise UploadedImageIsUnreadableError(
                     "We were unable to read the uploaded image. "
                     "Please make sure you are uploading a valid image file."
