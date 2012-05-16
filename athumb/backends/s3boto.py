@@ -4,6 +4,7 @@ http://code.welldev.org/django-storages/src/tip/AUTHORS
 """
 import os
 import mimetypes
+import re
 
 try:
     from cStringIO import StringIO
@@ -20,19 +21,32 @@ try:
     from boto.exception import S3ResponseError
     from boto.s3.key import Key
 except ImportError:
-    raise ImproperlyConfigured, "Could not load Boto's S3 bindings.\
-    \nSee http://code.google.com/p/boto/"
+    raise ImproperlyConfigured(
+        "Could not load boto's S3 bindings. Please install boto."
+    )
+
+AWS_REGIONS = [
+    'EU',
+    'us-east-1',
+    'us-west-1',
+    'us-west-2',
+    'sa-east-1',
+    'ap-northeast-1',
+    'ap-southeast-1',
+]
+
+REGION_RE = re.compile(r's3-(.+).amazonaws.com')
 
 ACCESS_KEY_NAME = getattr(settings, 'AWS_ACCESS_KEY_ID', None)
 SECRET_KEY_NAME = getattr(settings, 'AWS_SECRET_ACCESS_KEY', None)
 HEADERS = getattr(settings, 'AWS_HEADERS', {})
 STORAGE_BUCKET_NAME = getattr(settings, 'AWS_STORAGE_BUCKET_NAME', None)
 STORAGE_BUCKET_CNAME = getattr(settings, 'AWS_STORAGE_BUCKET_CNAME', None)
+AWS_REGION = getattr(settings, 'AWS_REGION', 'us-east-1')
 AUTO_CREATE_BUCKET = getattr(settings, 'AWS_AUTO_CREATE_BUCKET', True)
 DEFAULT_ACL = getattr(settings, 'AWS_DEFAULT_ACL', 'public-read')
 QUERYSTRING_AUTH = getattr(settings, 'AWS_QUERYSTRING_AUTH', True)
 QUERYSTRING_EXPIRE = getattr(settings, 'AWS_QUERYSTRING_EXPIRE', 3600)
-LOCATION = getattr(settings, 'AWS_LOCATION', '')
 IS_GZIPPED = getattr(settings, 'AWS_IS_GZIPPED', False)
 GZIP_CONTENT_TYPES = getattr(settings, 'GZIP_CONTENT_TYPES', (
     'text/css',
@@ -43,18 +57,21 @@ GZIP_CONTENT_TYPES = getattr(settings, 'GZIP_CONTENT_TYPES', (
 if IS_GZIPPED:
     from gzip import GzipFile
 
+
 class S3BotoStorage(Storage):
     """Amazon Simple Storage Service using Boto"""
 
     def __init__(self, bucket=STORAGE_BUCKET_NAME,
                        bucket_cname=STORAGE_BUCKET_CNAME,
-                       access_key=None, secret_key=None, acl=DEFAULT_ACL,
+                       region=AWS_REGION, access_key=None,
+                       secret_key=None, acl=DEFAULT_ACL,
                        headers=HEADERS, gzip=IS_GZIPPED,
                        gzip_content_types=GZIP_CONTENT_TYPES,
                        querystring_auth=QUERYSTRING_AUTH,
                        force_no_ssl=False):
         self.bucket_name = bucket
         self.bucket_cname = bucket_cname
+        self.host = self._get_host(region)
         self.acl = acl
         self.headers = headers
         self.gzip = gzip
@@ -68,7 +85,9 @@ class S3BotoStorage(Storage):
         if not access_key and not secret_key:
             access_key, secret_key = self._get_access_keys()
 
-        self.connection = S3Connection(access_key, secret_key)
+        self.connection = S3Connection(
+            access_key, secret_key, host=self.host,
+        )
 
     @property
     def bucket(self):
@@ -88,6 +107,22 @@ class S3BotoStorage(Storage):
             return access_key, secret_key
 
         return None, None
+
+    def _get_host(self, region):
+        """
+        Returns correctly formatted host. Accepted formats:
+
+            * simple region name, eg 'us-west-1' (see list in AWS_REGIONS)
+            * full host name, eg 's3-us-west-1.amazonaws.com'.
+        """
+        if 'us-east-1' in region:
+            return 's3.amazonaws.com'
+        elif region in AWS_REGIONS:
+            return 's3-%s.amazonaws.com' % region
+        elif region and not REGION_RE.findall(region):
+            raise ImproperlyConfigured('AWS_REGION improperly configured!')
+        # can be full host or empty string, default region
+        return  region
 
     def _get_or_create_bucket(self, name):
         """Retrieves a bucket if it exists, otherwise creates it."""
@@ -200,17 +235,18 @@ class S3BotoStorage(Storage):
         name = self._clean_name(name)
         return name
 
+
 class S3BotoStorage_AllPublic(S3BotoStorage):
     """
     Same as S3BotoStorage, but defaults to uploading everything with a
     public acl. This has two primary beenfits:
-    
+
     1) Non-encrypted requests just make a lot better sense for certain things
        like profile images. Much faster, no need to generate S3 auth keys.
     2) Since we don't have to hit S3 for auth keys, this backend is much
        faster than S3BotoStorage, as it makes no attempt to validate whether
        keys exist.
-       
+
     WARNING: This backend makes absolutely no attempt to verify whether the
     given key exists on self.url(). This is much faster, but be aware.
     """
@@ -228,8 +264,11 @@ class S3BotoStorage_AllPublic(S3BotoStorage):
         name = self._clean_name(name)
         if self.bucket_cname:
             return "http://%s/%s" % (self.bucket_cname, name)
-        else:
-            return "http://s3.amazonaws.com/%s/%s" % (self.bucket_name, name)
+        elif self.host:
+            return "http://%s/%s/%s" % (self.host, self.bucket_name, name)
+        # No host ? Then it's the default region
+        return "http://s3.amazonaws.com/%s/%s" % (self.bucket_name, name)
+
 
 class S3BotoStorageFile(File):
     def __init__(self, name, mode, storage):

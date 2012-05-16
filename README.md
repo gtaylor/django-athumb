@@ -7,7 +7,7 @@ plus the thumbs to S3. You may then get to the thumbnails in your template
 by doing something like:
 
     <img src="{% thumbnail some_obj.image '80x80' %}" />
-    
+
 This automatically assembles the remote S3 URL to retrieve the thumbnail from.
 No error checking is done, and several assumptions are made for the sake of
 speed.
@@ -46,7 +46,7 @@ To install run
 
     python setup.py install
 
-which will install the application into python's site-packages directory. 
+which will install the application into python's site-packages directory.
 
 ## Configuration
 
@@ -65,9 +65,9 @@ If you want S3 storage as your default file back-end:
     # If you don't want this to be the global default, just make sure you
     # specify the S3BotoStorage_AllPublic backend on a per-field basis.
     DEFAULT_FILE_STORAGE = 'athumb.backends.s3boto.S3BotoStorage_AllPublic'
-    
+
 Then setup some values used by the backend:
-    
+
     AWS_ACCESS_KEY_ID = 'YourS3AccessKeyHere'
     AWS_SECRET_ACCESS_KEY = 'YourS3SecretAccessKeyHere'
     AWS_STORAGE_BUCKET_NAME = 'OneOfYourBuckets'
@@ -85,6 +85,11 @@ can set a value like this:
 
 You do not need to specify a cache buster.
 
+If you aren't using the default S3 region, you can define it with the following
+setting:
+
+    AWS_REGION = 'us-east-1'
+
 ## Using in models
 
 After you have all of the above configured, you're ready to start using
@@ -93,12 +98,12 @@ athumb in your models. Here is an example model with a thumbnailing field.
     from django.db import models
     from athumb.fields import ImageWithThumbsField
     from athumb.backends.s3boto import S3BotoStorage_AllPublic
-    
+
     # It is generally good to keep these stored in their own module, to allow
     # for other models.py modules to import the values. This assumes that more
     # than one model stores stuff in the same bucket.
     PUBLIC_MEDIA_BUCKET = S3BotoStorage_AllPublic(bucket='public-media')
-    
+
     class YourModel(models.Model)
         image = ImageWithThumbsField(
             upload_to="store/product_images",
@@ -112,7 +117,7 @@ athumb in your models. Here is an example model with a thumbnailing field.
             ),
             blank=True, null=True,
             storage=PUBLIC_MEDIA_BUCKET)
-            
+
 A few things to note:
 
 * The tuples in `thumbs` are in the format of `(name, options)`. The value
@@ -137,10 +142,10 @@ though it *should* work.
 
 ## Template Tags
 
-When referring to media in HTML templates you can use custom template tags. 
+When referring to media in HTML templates you can use custom template tags.
 These tags can by accessed by loading the athumb template tag collection.
 
-	{% load thumbnail %}
+    {% load thumbnail %}
 
 If you'd like to make the athumb tags global, you can add the following to
 your master urls.py file:
@@ -176,7 +181,7 @@ To put the thumbnail URL on the context instead of just rendering
 it, finish the tag with `as [context_var_name]`:
 
     {% thumbnail image '60x60' as 'thumb' %}
-    <img src="{{thumb}}" />
+    <img src="{{ thumb }}" />
 
 
 ## manage.py commands
