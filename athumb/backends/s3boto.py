@@ -26,7 +26,7 @@ except ImportError:
     )
 
 AWS_REGIONS = [
-    'EU',
+    'eu-west-1',
     'us-east-1',
     'us-west-1',
     'us-west-2',
