@@ -71,8 +71,8 @@ class Command(BaseCommand):
             if regen_tracker.has_key(file_name):
                 print "(%d/%d) ID: %d -- Skipped -- Already re-genned %s" % (
                                                     counter,
-                                                    instance.id,
                                                     num_instances,
+                                                    instance.id,
                                                     file_name)
                 counter += 1
                 continue
