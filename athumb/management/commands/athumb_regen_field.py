@@ -107,7 +107,7 @@ class Command(BaseCommand):
             # ThumbnailField. If not, it's still pretty harmless.
 
             try:
-                file.save(file_name, file_contents)
+                file.generate_thumbs(file_name, file_contents)
             except IOError, e:
                 print "(%d/%d) ID %d --  Error -- Image may be corrupt)" % (
                     counter,
