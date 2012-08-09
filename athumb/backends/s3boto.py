@@ -262,7 +262,7 @@ class S3BotoStorage_AllPublic(S3BotoStorage):
         Since we assume all public storage with no authorization keys, we can
         just simply dump out a URL rather than having to query S3 for new keys.
         """
-        name = urllib.urlencode(self._clean_name(name))
+        name = urllib.quote_plus(self._clean_name(name))
 
         if self.bucket_cname:
             return "http://%s/%s" % (self.bucket_cname, name)
