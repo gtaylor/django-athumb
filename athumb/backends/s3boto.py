@@ -2,6 +2,7 @@
 Incorporated from django-storages, copyright all of those listed in:
 http://code.welldev.org/django-storages/src/tip/AUTHORS
 """
+import urllib
 import os
 import mimetypes
 import re
@@ -261,7 +262,8 @@ class S3BotoStorage_AllPublic(S3BotoStorage):
         Since we assume all public storage with no authorization keys, we can
         just simply dump out a URL rather than having to query S3 for new keys.
         """
-        name = self._clean_name(name)
+        name = urllib.urlencode(self._clean_name(name))
+
         if self.bucket_cname:
             return "http://%s/%s" % (self.bucket_cname, name)
         elif self.host:
