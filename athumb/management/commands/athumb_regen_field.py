@@ -83,6 +83,8 @@ class Command(BaseCommand):
 
             try:
                 fdat = file.read()
+                file.close()
+                del file.file
             except IOError:
                 # Key didn't exist.
                 print "(%d/%d) ID %d -- Error -- File missing on S3" % (
