@@ -71,8 +71,8 @@ class Command(BaseCommand):
             if regen_tracker.has_key(file_name):
                 print "(%d/%d) ID: %d -- Skipped -- Already re-genned %s" % (
                                                     counter,
-                                                    instance.id,
                                                     num_instances,
+                                                    instance.id,
                                                     file_name)
                 counter += 1
                 continue
@@ -83,6 +83,8 @@ class Command(BaseCommand):
 
             try:
                 fdat = file.read()
+                file.close()
+                del file.file
             except IOError:
                 # Key didn't exist.
                 print "(%d/%d) ID %d -- Error -- File missing on S3" % (
@@ -107,7 +109,7 @@ class Command(BaseCommand):
             # ThumbnailField. If not, it's still pretty harmless.
 
             try:
-                file.save(file_name, file_contents)
+                file.generate_thumbs(file_name, file_contents)
             except IOError, e:
                 print "(%d/%d) ID %d --  Error -- Image may be corrupt)" % (
                     counter,
