@@ -162,7 +162,7 @@ in the django-storages project. For most cases, you'll want to use
 ``athumb.backends.s3boto.S3BotoStorage_AllPublic``, as it does not use HTTPS, and
 is a good bit faster than ``S3BotoStorage`` because it makes some assumptions.
 
-..note:: This module is primarily aimed at storing and serving images to/from
+.. note:: This module is primarily aimed at storing and serving images to/from
     S3. I have not tested it at all with the standard Django Filesystem backend,
     though it *should* work.
 
