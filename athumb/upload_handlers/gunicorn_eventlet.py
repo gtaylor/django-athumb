@@ -1,7 +1,7 @@
 """
 Upload handlers with small tweaks to work with gunicorn + eventlet async
-workers. These should eventually becom unecessary as the supporting libraries
-continue to imporve.
+workers. These should eventually become unnecessary as the supporting libraries
+continue to improve.
 """
 from django.core.files.uploadhandler import TemporaryFileUploadHandler
 import eventlet

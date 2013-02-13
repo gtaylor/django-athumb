@@ -12,7 +12,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.core.files.base import ContentFile
 from athumb.exceptions import UploadedImageIsUnreadableError
-from pial.engines.pil_engine import PILEngine
+from athumb.pial.engines.pil_engine import PILEngine
 
 from validators import ImageUploadExtensionValidator
 
@@ -24,7 +24,6 @@ except ImportError:
     # Not using South, no big deal.
     pass
 
-# TODO: Make this configurable.
 # Thumbnailing is done through here. Eventually we can support image libraries
 # other than PIL.
 THUMBNAIL_ENGINE = PILEngine()

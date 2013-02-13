@@ -233,6 +233,11 @@ To-Do
 Change Log
 ----------
 
+2.3
+===
+
+* Embed pial, eliminating the need to install it separately.
+
 2.2
 ===
 
