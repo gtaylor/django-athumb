@@ -76,6 +76,9 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
         new_url = "%s/%s" % (url_minus_filename,
                                       os.path.basename(new_filename))
 
+        # Cache busters are a cheezy way to force some browsers to retrieve
+        # an updated image, circumventing any long-term or infinite caching
+        # you may have set when uploading to S3. This are entirely optional.
         if cache_bust and MEDIA_CACHE_BUSTER:
             new_url = "%s?cbust=%s" % (new_url, MEDIA_CACHE_BUSTER)
 
