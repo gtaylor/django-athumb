@@ -1,4 +1,3 @@
 PIL
 Django
 boto
-git+http://github.com/duointeractive/pial.git#egg=pial
