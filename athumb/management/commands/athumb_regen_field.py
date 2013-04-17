@@ -2,6 +2,7 @@ import os
 from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.contenttypes.models import ContentType
+from django.db.models.loading import get_model
 
 class Command(BaseCommand):
     args = '<app.model> <field>'
@@ -33,12 +34,8 @@ class Command(BaseCommand):
         app_split = self.args[0].split('.')
         app = app_split[0]
         model_name = app_split[1].lower()
-
-        try:
-            self.model = ContentType.objects.get(app_label=app, model=model_name)
-            self.model = self.model.model_class()
-        except ContentType.DoesNotExist:
-            raise CommandError("There is no app/model combination: %s" % self.args[0])
+        
+        self.model = get_model(app, model_name)
 
         # String field name to re-generate.
         self.field = self.args[1]
