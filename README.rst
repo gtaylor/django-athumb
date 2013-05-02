@@ -53,9 +53,9 @@ Source: http://github.com/duointeractive/django-athumb
 Requirements
 ------------
 
-* python >= 2.5
-* django >= 1.3
-* boto >= 2.3
+* python >= 2.6 (but not Python 3)
+* django >= 1.4
+* boto >= 2.5
 * PIL >= 1.1.6
 
 Installation
@@ -232,6 +232,12 @@ To-Do
 
 Change Log
 ----------
+
+2.4
+===
+
+* We now require django-storages, and use it directly instead of our
+  custom fork.
 
 2.3
 ===

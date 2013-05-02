@@ -18,10 +18,10 @@ setup(
     url='http://github.com/gtaylor/django-athumb',
     platforms=["any"],
     requires=[
-        'django',
-        'boto',
+        'django>=1.4',
+        'boto>=2.5',
         'django-storages>=1.1.8'
-        'pil'
+        'pil>=1.1.6'
     ],
     classifiers=[
         'Development Status :: 4 - Beta',

@@ -3,19 +3,26 @@ File backends with small tweaks to work with gunicorn + eventlet async
 workers. These should eventually becom unecessary as the supporting libraries
 continue to improve.
 """
+
 import os
+import errno
 import eventlet
 from django.conf import settings
 from django.core.files import locks
 from django.core.files.move import file_move_safe
-from django.utils.text import get_valid_filename
 from django.core.files.storage import FileSystemStorage
+
 
 class EventletFileSystemStorage(FileSystemStorage):
     """
     Modified standard FileSystemStorage class to play nicely with large file
-    uploads and eventlet gunicorn workers.
+    uploads and eventlet gunicorn workers. Ideally we'd just override part of
+    it, but there was no way to do it as of Django 1.4.
+
+    .. todo:: Re-investigate whether we can selectively override this with
+        later versions after Django 1.5.
     """
+
     def _save(self, name, content):
         full_path = self.path(name)
 
