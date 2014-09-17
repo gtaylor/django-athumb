@@ -53,10 +53,10 @@ Source: http://github.com/duointeractive/django-athumb
 Requirements
 ------------
 
-* python >= 2.5
-* django >= 1.3
-* boto >= 2.3
-* PIL >= 1.1.6
+* python >= 2.7
+* django >= 1.6
+* boto >= 3.0
+* Pillow >= 2.5.0
 
 Installation
 ------------
@@ -232,6 +232,11 @@ To-Do
 
 Change Log
 ----------
+
+2.4
+===
+
+* Changes to add Django 1.7 compatibility.
 
 2.3
 ===

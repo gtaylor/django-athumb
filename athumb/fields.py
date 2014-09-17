@@ -215,16 +215,24 @@ class ImageWithThumbsField(ImageField):
     Note: The 'thumbs' attribute is not required. If you don't provide it, 
     ImageWithThumbsField will act as a normal ImageField
     """
+
     attr_class = ImageWithThumbsFieldFile
+    default_validators = [IMAGE_EXTENSION_VALIDATOR]
 
     def __init__(self, *args, **kwargs):
         self.thumbs = kwargs.pop('thumbs', ())
         self.thumbnail_format = kwargs.pop('thumbnail_format', None)
 
-        if not kwargs.has_key('validators'):
-            kwargs['validators'] = [IMAGE_EXTENSION_VALIDATOR]
-
-        if not kwargs.has_key('max_length'):
+        if 'max_length' not in kwargs:
             kwargs['max_length'] = 255
 
         super(ImageWithThumbsField, self).__init__(*args, **kwargs)
+
+    def deconstruct(self):
+        name, path, args, kwargs = super(ImageWithThumbsField, self).deconstruct()
+        # Only include kwarg if it's not the default
+        if self.thumbs:
+            kwargs['thumbs'] = self.thumbs
+        if self.thumbnail_format:
+            kwargs['thumbnail_format'] = self.thumbnail_format
+        return name, path, args, kwargs
