@@ -17,7 +17,7 @@ setup(
     license='BSD License',
     url='http://github.com/gtaylor/django-athumb',
     platforms=["any"],
-    requires=['django', 'boto', 'pil'],
+    requires=['django', 'boto', 'pillow'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
