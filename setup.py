@@ -17,10 +17,10 @@ setup(
     license='BSD License',
     url='http://github.com/gtaylor/django-athumb',
     platforms=["any"],
-    requires=[
+    install_requires=[
         'django>=1.4',
         'boto>=2.5',
-        'django-storages>=1.1.8'
+        'django-storages>=1.1.8',
         'pil>=1.1.6'
     ],
     classifiers=[
