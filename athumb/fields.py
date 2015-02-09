@@ -5,7 +5,7 @@ Fields, FieldFiles, and Validators.
 import os
 import cStringIO
 
-from PIL import Image
+from PIL import Image, ExifTags
 from django.db.models import ImageField
 from django.db.models.fields.files import ImageFieldFile
 from django.conf import settings
@@ -35,6 +35,7 @@ MEDIA_CACHE_BUSTER = getattr(settings, 'MEDIA_CACHE_BUSTER', '')
 
 # Models want this instantiated ahead of time.
 IMAGE_EXTENSION_VALIDATOR = ImageUploadExtensionValidator()
+
 
 class ImageWithThumbsFieldFile(ImageFieldFile):
     """
@@ -128,6 +129,21 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
         content.seek(0)
         image = Image.open(content)
 
+        # detect rotation in source image from Exif
+        for orientation in ExifTags.TAGS.keys():
+            if ExifTags.TAGS[orientation] == 'Orientation':
+                break
+
+        exif = dict(image._getexif() or {})
+        if exif.items():
+            found_orientation = exif[orientation]
+            if found_orientation == 3:
+                image = image.rotate(180, expand=True)
+            elif found_orientation == 6:
+                image = image.rotate(270, expand=True)
+            elif found_orientation == 8:
+                image = image.rotate(90, expand=True)
+
         # Convert to RGBA (alpha) if necessary
         if image.mode not in ('L', 'RGB', 'RGBA'):
             image = image.convert('RGBA')
@@ -141,12 +157,12 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
         """
         Calculates the correct filename for a would-be (or potentially
         existing) thumbnail of the given size.
-        
+
         NOTE: This includes the path leading up to the thumbnail. IE:
         uploads/cbid_images/photo.png
-        
+
         size: (tuple) In the format of (width, height)
-        
+
         Returns a string filename.
         """
         filename_split = self.name.rsplit('.', 1)
@@ -159,7 +175,7 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
         """
         Given that 'image' is a PIL Image object, create a thumbnail for the
         given size tuple and store it via the storage backend.
-        
+
         image: (Image) PIL Image object.
         size: (tuple) Tuple in form of (width, height). Image will be
             thumbnailed to this size.
@@ -205,6 +221,7 @@ class ImageWithThumbsFieldFile(ImageFieldFile):
             self.storage.delete(thumb_filename)
 
         super(ImageWithThumbsFieldFile, self).delete(save)
+
 
 class ImageWithThumbsField(ImageField):
     """
