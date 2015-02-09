@@ -98,7 +98,7 @@ Then setup some values used by the backend::
 If you would like to use a vanity domain instead of s3.amazonaws.com, you
 first should configure it in amazon and then add this to settings::
 
-    AWS_STORAGE_BUCKET_CNAME = 'static.yourdomain.com'
+    AWS_S3_CUSTOM_DOMAIN = 'static.yourdomain.com'
 
 If you want a cache buster for your thumbnails (a string added to the end of
 the image URL that causes browsers to re-fetch the image after changes), you
