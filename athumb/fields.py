@@ -235,4 +235,8 @@ class ImageWithThumbsField(ImageField):
             kwargs['thumbs'] = self.thumbs
         if self.thumbnail_format:
             kwargs['thumbnail_format'] = self.thumbnail_format
+        if self.validators == [IMAGE_EXTENSION_VALIDATOR] and 'validators' in kwargs:
+            del kwargs['validators']
+        if 'storage' in kwargs:
+            del kwargs['storage']
         return name, path, args, kwargs
