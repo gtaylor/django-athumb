@@ -233,6 +233,11 @@ To-Do
 Change Log
 ----------
 
+2.4.1
+=====
+
+* Fixes to restore compatibility with migrations. (jneves)
+
 2.4
 ===
 
