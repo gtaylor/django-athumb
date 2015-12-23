@@ -3,6 +3,7 @@ django-athumb
 
 :Author: Greg Taylor
 :License: BSD
+:Status: Stable, but un-maintained (file an issue if you'd like to take over!)
 
 Storing images and their thumbnails on S3 is a bit of a clumbsy endeavor with
 Django. While this Django app may work with more typical storage backends, it
